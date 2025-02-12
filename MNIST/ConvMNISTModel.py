@@ -84,21 +84,23 @@ class ConvMnistModel(nn.Module):
     def train_epoch(self, train_loader, optim, loss_func, device):
         self.train()
         train_loss = 0
-
         for batch in train_loader:
             images, labels = batch
             images, labels = images.to(device), labels.to(device)
+
             optim.zero_grad()
             loss = self.training_step((images, labels), loss_func)
             loss.backward()
             optim.step()
 
             train_loss += loss.item()
-
         return train_loss / len(train_loader)
 
     def validation_step(self, batch, loss_func):
         images, labels = batch
+        device = next(self.parameters()).device
+        images, labels = images.to(device), labels.to(device)
+
         out = self(images)
         loss = loss_func(out, labels)
         acc = accuracy(out, labels)
