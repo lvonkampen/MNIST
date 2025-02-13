@@ -13,9 +13,14 @@ class AudioProcessor:
         self.t_max = []
         self.t_mean = []
         self.t_std = []
+        self.count_above_8k = 0
+        self.files_above_8k = []
+        self.total_files = 0
 
     def process_audio(self, filepath):
+        self.total_files += 1
         with wav.open(filepath, "rb") as wave_file:
+            sample_rate = wave_file.getframerate()
             n_frames = wave_file.getnframes()
             frames_buff = wave_file.readframes(n_frames)
             frames_int = np.frombuffer(frames_buff, dtype=np.int16)
@@ -23,23 +28,24 @@ class AudioProcessor:
 
             print(f"Processing: {filepath}")
 
+
             shape_ = frames_float.shape
-            self.t_shape.append(shape_)
-            print("Shape:", shape_)
-
-            print("First 30 samples:", frames_float[:30])
-
             min_val = frames_float.min()
-            print("Min:", min_val)
-
             max_val = frames_float.max()
-            print("Max:", max_val)
-
             mean_val = frames_float.mean()
-            print("Mean:", mean_val)
-
             std_val = frames_float.std()
-            print("Std Dev:", std_val)
+
+            if shape_[0] > 8000:
+                self.count_above_8k += 1
+                self.files_above_8k.append(filepath)
+
+            print(f"Sample rate: {sample_rate} Hz")
+            # print("Shape:", shape_)
+            # print("First 30 samples:", frames_float[:30])
+            # print("Min:", min_val)
+            # print("Max:", max_val)
+            # print("Mean:", mean_val)
+            # print("Std Dev:", std_val)
 
             frames_norm = frames_float / std_val
 
@@ -47,6 +53,7 @@ class AudioProcessor:
             max_val = frames_norm.max()
             mean_val = frames_norm.mean()
 
+            self.t_shape.append(shape_)
             self.t_min.append(min_val)
             self.t_max.append(max_val)
             self.t_mean.append(mean_val)
@@ -54,14 +61,17 @@ class AudioProcessor:
 
 def main():
     script_dir = os.path.dirname(os.path.abspath(__file__))
-    recordings_dir = os.path.join(script_dir, "recordings")
+    data_dir = os.path.join(script_dir, "data")
 
     processor = AudioProcessor()
 
-    for filename in os.listdir(recordings_dir):
-        if filename.endswith(".wav"):
-            filepath = os.path.join(recordings_dir, filename)
-            processor.process_audio(filepath)
+    for folder in os.listdir(data_dir):
+        folder_path = os.path.join(data_dir, folder)
+        if os.path.isdir(folder_path):
+            for filename in os.listdir(folder_path):
+                if filename.endswith(".wav"):
+                    filepath = os.path.join(folder_path, filename)
+                    processor.process_audio(filepath)
 
     print("\n--- Summary of Processed Files ---")
     print("Normalized Shapes:", processor.t_shape)
@@ -71,6 +81,8 @@ def main():
     print("Standard Deviation:", processor.t_std)
 
     print("\n--- Final Summary ---")
+    print("Minimum Shape:", min(processor.t_shape))
+    print("Maximum Shape:", max(processor.t_shape))
     print("Minimum Normalized Value:", min(processor.t_min))
     print("Mean Min Normalized Value:", sum(processor.t_min)/len(processor.t_min))
     print("Maximum Min Normalized Value:", max(processor.t_min))
@@ -80,6 +92,12 @@ def main():
     print("Minimum Normalized Mean Value:", min(processor.t_mean))
     print("Mean Normalized Mean Value:", sum(processor.t_mean)/len(processor.t_mean))
     print("Maximum Normalized Mean Value:", max(processor.t_mean))
+
+    print("Sample Count >8000:", processor.count_above_8k)
+    print("Total Files Processed:", processor.total_files)
+
+    # for file in processor.files_above_8k:
+    #     print("Filename >8000:", file)
 
     lengths = [shape_tuple[0] for shape_tuple in processor.t_shape]
 
