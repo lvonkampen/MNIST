@@ -2,7 +2,6 @@ import wave as wav
 import numpy as np
 import matplotlib.pyplot as plt
 import os
-
 from numpy.array_api import float32
 
 
