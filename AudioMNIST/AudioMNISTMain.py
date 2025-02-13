@@ -71,9 +71,15 @@ def main():
     print("Standard Deviation:", processor.t_std)
 
     print("\n--- Final Summary ---")
-    print("Final Min Normalized Value:", min(processor.t_min))
-    print("Final Max Normalized Value:", max(processor.t_max))
-    print("Final Normalized Mean:", sum(processor.t_mean)/len(processor.t_mean))
+    print("Minimum Normalized Value:", min(processor.t_min))
+    print("Mean Min Normalized Value:", sum(processor.t_min)/len(processor.t_min))
+    print("Maximum Min Normalized Value:", max(processor.t_min))
+    print("Minimum Max Normalized Value:", min(processor.t_max))
+    print("Mean Max Normalized Value:", sum(processor.t_max)/len(processor.t_max))
+    print("Maximum Normalized Value:", max(processor.t_max))
+    print("Minimum Normalized Mean Value:", min(processor.t_mean))
+    print("Mean Normalized Mean Value:", sum(processor.t_mean)/len(processor.t_mean))
+    print("Maximum Normalized Mean Value:", max(processor.t_mean))
 
     lengths = [shape_tuple[0] for shape_tuple in processor.t_shape]
 
