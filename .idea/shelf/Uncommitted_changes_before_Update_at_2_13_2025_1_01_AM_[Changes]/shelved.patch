@@ -1,0 +1,55 @@
+Index: .idea/workspace.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+><?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<project version=\"4\">\r\n  <component name=\"AutoImportSettings\">\r\n    <option name=\"autoReloadType\" value=\"SELECTIVE\" />\r\n  </component>\r\n  <component name=\"ChangeListManager\">\r\n    <list default=\"true\" id=\"f68265ec-7205-435a-9d6b-6d0aa938573f\" name=\"Changes\" comment=\"audio updated\">\r\n      <change beforePath=\"$PROJECT_DIR$/.idea/workspace.xml\" beforeDir=\"false\" afterPath=\"$PROJECT_DIR$/.idea/workspace.xml\" afterDir=\"false\" />\r\n      <change beforePath=\"$PROJECT_DIR$/AudioMNIST/AudioMNISTMain.py\" beforeDir=\"false\" afterPath=\"$PROJECT_DIR$/AudioMNIST/AudioMNISTMain.py\" afterDir=\"false\" />\r\n    </list>\r\n    <option name=\"SHOW_DIALOG\" value=\"false\" />\r\n    <option name=\"HIGHLIGHT_CONFLICTS\" value=\"true\" />\r\n    <option name=\"HIGHLIGHT_NON_ACTIVE_CHANGELIST\" value=\"false\" />\r\n    <option name=\"LAST_RESOLUTION\" value=\"IGNORE\" />\r\n  </component>\r\n  <component name=\"FileTemplateManagerImpl\">\r\n    <option name=\"RECENT_TEMPLATES\">\r\n      <list>\r\n        <option value=\"Python Script\" />\r\n      </list>\r\n    </option>\r\n  </component>\r\n  <component name=\"Git.Settings\">\r\n    <option name=\"RECENT_GIT_ROOT_PATH\" value=\"$PROJECT_DIR$\" />\r\n  </component>\r\n  <component name=\"GitHubPullRequestSearchHistory\">{\r\n  &quot;lastFilter&quot;: {\r\n    &quot;state&quot;: &quot;OPEN&quot;,\r\n    &quot;assignee&quot;: &quot;lvonkampen&quot;\r\n  }\r\n}</component>\r\n  <component name=\"GithubPullRequestsUISettings\">{\r\n  &quot;selectedUrlAndAccountId&quot;: {\r\n    &quot;url&quot;: &quot;https://github.com/lvonkampen/MNIST.git&quot;,\r\n    &quot;accountId&quot;: &quot;0f4f0bbe-345d-4b55-b319-4eb0a4182241&quot;\r\n  }\r\n}</component>\r\n  <component name=\"ProblemsViewState\">\r\n    <option name=\"selectedTabId\" value=\"CurrentFile\" />\r\n  </component>\r\n  <component name=\"ProjectColorInfo\">{\r\n  &quot;associatedIndex&quot;: 3\r\n}</component>\r\n  <component name=\"ProjectId\" id=\"2phW7kZpGX4SlsIuMGXa4FvIIXT\" />\r\n  <component name=\"ProjectViewState\">\r\n    <option name=\"hideEmptyMiddlePackages\" value=\"true\" />\r\n    <option name=\"showLibraryContents\" value=\"true\" />\r\n  </component>\r\n  <component name=\"PropertiesComponent\">{\r\n  &quot;keyToString&quot;: {\r\n    &quot;Python.12-03-24_DatasetPractice.executor&quot;: &quot;Run&quot;,\r\n    &quot;Python.12-04-24_MNISTPractice.executor&quot;: &quot;Run&quot;,\r\n    &quot;Python.12-11-24_MNISTMain.executor&quot;: &quot;Run&quot;,\r\n    &quot;Python.12-11-24_MNISTModel.executor&quot;: &quot;Run&quot;,\r\n    &quot;Python.AudioMNISTMain.executor&quot;: &quot;Run&quot;,\r\n    &quot;Python.AudioMNISTModel.executor&quot;: &quot;Run&quot;,\r\n    &quot;Python.ConvMNISTMain.executor&quot;: &quot;Run&quot;,\r\n    &quot;Python.ConvMNISTModel.executor&quot;: &quot;Run&quot;,\r\n    &quot;Python.MNISTMain.executor&quot;: &quot;Run&quot;,\r\n    &quot;Python.MNISTModel.executor&quot;: &quot;Run&quot;,\r\n    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,\r\n    &quot;git-widget-placeholder&quot;: &quot;main&quot;,\r\n    &quot;last_opened_file_path&quot;: &quot;C:/Users/GoatF/Downloads/AI_Practice&quot;\r\n  }\r\n}</component>\r\n  <component name=\"RecentsManager\">\r\n    <key name=\"MoveFile.RECENT_KEYS\">\r\n      <recent name=\"C:\\Users\\GoatF\\Downloads\\AI_Practice\\MNIST\" />\r\n      <recent name=\"C:\\Users\\GoatF\\Downloads\\AI_Practice\\AudioMNIST\" />\r\n      <recent name=\"C:\\Users\\GoatF\\Downloads\\AI_Practice\\MNISTPractice\" />\r\n    </key>\r\n  </component>\r\n  <component name=\"SharedIndexes\">\r\n    <attachedChunks>\r\n      <set>\r\n        <option value=\"bundled-python-sdk-d7ad00fb9fc3-c546a90a8094-com.jetbrains.pycharm.community.sharedIndexes.bundled-PC-242.23726.102\" />\r\n      </set>\r\n    </attachedChunks>\r\n  </component>\r\n  <component name=\"SpellCheckerSettings\" RuntimeDictionaries=\"0\" Folders=\"0\" CustomDictionaries=\"0\" DefaultDictionary=\"application-level\" UseSingleDictionary=\"true\" transferred=\"true\" />\r\n  <component name=\"TaskManager\">\r\n    <task active=\"true\" id=\"Default\" summary=\"Default task\">\r\n      <changelist id=\"f68265ec-7205-435a-9d6b-6d0aa938573f\" name=\"Changes\" comment=\"\" />\r\n      <created>1733218622590</created>\r\n      <option name=\"number\" value=\"Default\" />\r\n      <option name=\"presentableId\" value=\"Default\" />\r\n      <updated>1733218622590</updated>\r\n    </task>\r\n    <task id=\"LOCAL-00001\" summary=\"corrected errors relating to cpu / cuda data interference\">\r\n      <option name=\"closed\" value=\"true\" />\r\n      <created>1739352119805</created>\r\n      <option name=\"number\" value=\"00001\" />\r\n      <option name=\"presentableId\" value=\"LOCAL-00001\" />\r\n      <option name=\"project\" value=\"LOCAL\" />\r\n      <updated>1739352119805</updated>\r\n    </task>\r\n    <task id=\"LOCAL-00002\" summary=\"audio updated\">\r\n      <option name=\"closed\" value=\"true\" />\r\n      <created>1739425030490</created>\r\n      <option name=\"number\" value=\"00002\" />\r\n      <option name=\"presentableId\" value=\"LOCAL-00002\" />\r\n      <option name=\"project\" value=\"LOCAL\" />\r\n      <updated>1739425030490</updated>\r\n    </task>\r\n    <option name=\"localTasksCounter\" value=\"3\" />\r\n    <servers />\r\n  </component>\r\n  <component name=\"VcsManagerConfiguration\">\r\n    <MESSAGE value=\"corrected errors relating to cpu / cuda data interference\" />\r\n    <MESSAGE value=\"audio updated\" />\r\n    <option name=\"LAST_COMMIT_MESSAGE\" value=\"audio updated\" />\r\n  </component>\r\n</project>
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/.idea/workspace.xml b/.idea/workspace.xml
+--- a/.idea/workspace.xml	(revision 7d38fa1ebc33eba30e8316ae438f12f9d045ef6d)
++++ b/.idea/workspace.xml	(date 1739429974232)
+@@ -4,10 +4,7 @@
+     <option name="autoReloadType" value="SELECTIVE" />
+   </component>
+   <component name="ChangeListManager">
+-    <list default="true" id="f68265ec-7205-435a-9d6b-6d0aa938573f" name="Changes" comment="audio updated">
+-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+-      <change beforePath="$PROJECT_DIR$/AudioMNIST/AudioMNISTMain.py" beforeDir="false" afterPath="$PROJECT_DIR$/AudioMNIST/AudioMNISTMain.py" afterDir="false" />
+-    </list>
++    <list default="true" id="f68265ec-7205-435a-9d6b-6d0aa938573f" name="Changes" comment="formatting improved" />
+     <option name="SHOW_DIALOG" value="false" />
+     <option name="HIGHLIGHT_CONFLICTS" value="true" />
+     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+@@ -21,6 +18,7 @@
+     </option>
+   </component>
+   <component name="Git.Settings">
++    <option name="PUSH_AUTO_UPDATE" value="true" />
+     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+   </component>
+   <component name="GitHubPullRequestSearchHistory">{
+@@ -102,12 +100,21 @@
+       <option name="project" value="LOCAL" />
+       <updated>1739425030490</updated>
+     </task>
+-    <option name="localTasksCounter" value="3" />
++    <task id="LOCAL-00003" summary="formatting improved">
++      <option name="closed" value="true" />
++      <created>1739429656939</created>
++      <option name="number" value="00003" />
++      <option name="presentableId" value="LOCAL-00003" />
++      <option name="project" value="LOCAL" />
++      <updated>1739429656939</updated>
++    </task>
++    <option name="localTasksCounter" value="4" />
+     <servers />
+   </component>
+   <component name="VcsManagerConfiguration">
+     <MESSAGE value="corrected errors relating to cpu / cuda data interference" />
+     <MESSAGE value="audio updated" />
+-    <option name="LAST_COMMIT_MESSAGE" value="audio updated" />
++    <MESSAGE value="formatting improved" />
++    <option name="LAST_COMMIT_MESSAGE" value="formatting improved" />
+   </component>
+ </project>
+\ No newline at end of file
