@@ -2,7 +2,6 @@ import wave as wav
 import numpy as np
 import matplotlib.pyplot as plt
 import os
-from numpy.array_api import float32
 
 
 class AudioProcessor:
@@ -24,7 +23,7 @@ class AudioProcessor:
             n_frames = wave_file.getnframes()
             frames_buff = wave_file.readframes(n_frames)
             frames_int = np.frombuffer(frames_buff, dtype=np.int16)
-            frames_float = frames_int.astype(dtype=float32)
+            frames_float = frames_int.astype(dtype=float)
 
             print(f"Processing: {filepath}")
 
