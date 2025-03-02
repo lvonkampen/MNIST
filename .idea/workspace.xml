@@ -5,9 +5,11 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="f68265ec-7205-435a-9d6b-6d0aa938573f" name="Changes" comment="formatting improved">
+      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/AudioMNIST/AudioMNISTMain.py" beforeDir="false" afterPath="$PROJECT_DIR$/AudioMNIST/AudioMNISTMain.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/AudioMNIST/AudioMNISTModel.py" beforeDir="false" afterPath="$PROJECT_DIR$/AudioMNIST/AudioMNISTModel.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/AudioMNIST/recordings/0_jackson_0.wav" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/AudioMNIST/recordings/0_jackson_1.wav" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/AudioMNIST/recordings/0_jackson_10.wav" beforeDir="false" />
@@ -1565,6 +1567,7 @@
     &quot;Python.MNISTModel.executor&quot;: &quot;Run&quot;,
     &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
     &quot;git-widget-placeholder&quot;: &quot;main&quot;,
+    &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
     &quot;last_opened_file_path&quot;: &quot;C:/Users/GoatF/Downloads/AI_Practice&quot;
   }
 }</component>
@@ -1623,7 +1626,23 @@
       <option name="project" value="LOCAL" />
       <updated>1739432313365</updated>
     </task>
-    <option name="localTasksCounter" value="5" />
+    <task id="LOCAL-00005" summary="formatting improved">
+      <option name="closed" value="true" />
+      <created>1739437738967</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1739437738967</updated>
+    </task>
+    <task id="LOCAL-00006" summary="formatting improved">
+      <option name="closed" value="true" />
+      <created>1739946635310</created>
+      <option name="number" value="00006" />
+      <option name="presentableId" value="LOCAL-00006" />
+      <option name="project" value="LOCAL" />
+      <updated>1739946635310</updated>
+    </task>
+    <option name="localTasksCounter" value="7" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">

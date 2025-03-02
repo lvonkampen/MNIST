@@ -3,54 +3,109 @@ import torch.nn as nn
 import torch.nn.init as init
 
 
-class AudioMnistModel(nn.Module):
-    def __init__(self, activation, input_size, hidden_size, output_size):
-        super().__init__()
-        self.layer1 = nn.Linear(input_size, hidden_size)
-        self.layer2 = nn.Linear(hidden_size, output_size)
-
+class ConvBlock(nn.Module):
+    def __init__(self, activation, in_channels, out_channels, kernel_size=3, pool_size=2):
+        super(ConvBlock, self).__init__()
+        self.conv = nn.Conv1d(in_channels, out_channels, kernel_size, padding=1)
+        self.batch = nn.BatchNorm1d(out_channels)
         self.activation = activation
+        self.pool = nn.MaxPool1d(pool_size) # We use 1d pooling instead of 2 since it's a frequency
 
-        init.xavier_normal_(self.layer1.weight)
-        init.xavier_normal_(self.layer2.weight)
+    def forward(self, x):
+        x = self.conv(x)
+        x = self.batch(x)
+        x = self.activation(x)
+        x = self.pool(x)
+        return x
 
-    def forward(self, xb):
-        xb = xb.reshape(-1, 784)
-        out = self.layer1(xb)
-        out = self.activation(out)
-        out = self.layer2(out)
-        out = self.activation(out)
-        return out
+class AudioMnistModel(nn.Module):
+    def __init__(self, activation, hidden_size, in_channels, output_size, conv_channels=[32,64]):
+        super(AudioMnistModel, self).__init__()
+        self.conv_blocks = nn.ModuleList()
+
+        for out_channels in conv_channels:
+            self.conv_blocks.append(ConvBlock(activation, in_channels, out_channels))
+            in_channels = out_channels
+
+        self.flattened_size = self._calculate_flattened_size()
+
+        layers = []
+        prev_size = self.flattened_size
+
+        for size in hidden_size:
+            layers.append(nn.Linear(prev_size, size))
+            layers.append(nn.BatchNorm1d(size))
+            layers.append(activation)
+            prev_size = size
+
+        self.fc_layers = nn.Sequential(*layers)
+        self.output_layer = nn.Linear(hidden_size[-1], output_size)
+
+        self._initialize_weights()
+
+    def _calculate_flattened_size(self): # mock MNIST model after convolutions
+        x = torch.zeros(1, 40, 100) # Simulated MFCC input (40 features -- 100 time steps)
+        for conv_block in self.conv_blocks:
+            x = conv_block(x)
+        return x.view(1, -1).size(1)
+
+    def _initialize_weights(self):
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
+                if m.bias is not None:
+                    init.zeros_(m.bias)
+            elif isinstance(m, nn.Linear):
+                init.xavier_uniform_(m.weight)
+                if m.bias is not None:
+                    init.zeros_(m.bias)
+            elif isinstance(m, nn.BatchNorm2d) or isinstance(m, nn.BatchNorm1d):
+                init.ones_(m.weight)
+                init.zeros_(m.bias)
+
+    def forward(self, x):
+        x = x.to(next(self.parameters()).device)
+        for conv_block in self.conv_blocks:
+            x = conv_block(x)
+        x = x.flatten(start_dim=1) # outputs a 3d tensor (batch, channels, time_steps)
+
+        x = self.fc_layers(x)
+        x = self.output_layer(x)
+
+        return x
 
     def training_step(self, batch, loss_func):
         images, labels = batch
-        out = self(images)  ## Generate predictions
-        loss = loss_func(out, labels)  ## Calculate the loss
+        out = self(images)
+        loss = loss_func(out, labels)
         return loss
 
-    def train_epoch(self, train_loader, optim, loss_func):
+    def train_epoch(self, train_loader, optim, loss_func, device):
         self.train()
         train_loss = 0
-
         for batch in train_loader:
             images, labels = batch
+            images, labels = images.to(device), labels.to(device)
+
             optim.zero_grad()
             loss = self.training_step((images, labels), loss_func)
             loss.backward()
             optim.step()
 
             train_loss += loss.item()
-
         return train_loss / len(train_loader)
 
     def validation_step(self, batch, loss_func):
         images, labels = batch
+        device = next(self.parameters()).device
+        images, labels = images.to(device), labels.to(device)
+
         out = self(images)
         loss = loss_func(out, labels)
         acc = accuracy(out, labels)
         return {'val_loss': loss, 'val_acc': acc}
 
-    def validate_epoch(self, val_loader, loss_func):
+    def validate_epoch(self, val_loader, loss_func, device):
         self.eval()
         correct = 0
         total = 0
@@ -59,9 +114,15 @@ class AudioMnistModel(nn.Module):
         with torch.no_grad():
             for batch in val_loader:
                 images, labels = batch
-                val_results.append(self.validation_step((images, labels), loss_func))
+                images, labels = images.to(device), labels.to(device)
 
-                _, preds = torch.max(self(images), dim=1)
+                out = self(images)
+
+                loss = loss_func(out, labels)
+                acc = accuracy(out, labels)
+                val_results.append({'val_loss': loss, 'val_acc': acc})
+
+                _, preds = torch.max(out, dim=1)
                 correct += (preds == labels).sum().item()
                 total += labels.size(0)
 
