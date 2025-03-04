@@ -39,9 +39,18 @@ class CustomAudioMNISTDataset(Dataset):
         waveform, sample_rate = torchaudio.load(file_path)
 
         if self.transform:
-            waveform = self.transform(waveform) # Shape: [1, 40, T]
-        return waveform, label
+            mfcc = self.transform(waveform)  # Shape: [1, 40, T]
+            mfcc = mfcc.squeeze(0)  # Now shape: [40, T]
+        else:
+            mfcc = waveform
+        return mfcc, label
 
+def collate_fn(batch):
+    inputs, labels = zip(*batch)
+    inputs_transposed = [inp.transpose(0, 1) for inp in inputs]  # each becomes [T, 40]
+    padded = torch.nn.utils.rnn.pad_sequence(inputs_transposed, batch_first=True, padding_value=0)
+    padded = padded.transpose(1, 2)
+    return padded, torch.tensor(labels)
 
 def evaluate(model, val_loader, loss_func):
     outputs = [model.validation_step(batch, loss_func) for batch in val_loader]
@@ -49,17 +58,26 @@ def evaluate(model, val_loader, loss_func):
 
 def timed_training(model, train_loader, val_loader, loss_func, initial_learning_rate, epochs, patience, optim, device):
     start_time = time.time()
-    training(model, train_loader, val_loader, loss_func, initial_learning_rate, epochs, patience, optim, device)
+    train_losses, val_losses = training(model, train_loader, val_loader, loss_func, initial_learning_rate, epochs, patience, optim, device)
     total_time = time.time() - start_time
     print(f"Total Elapsed Time: ", total_time)
+    return train_losses, val_losses
+
+def plot_spectrogram(spectrogram, label):
+    plt.figure(figsize=(8, 6))
+    plt.imshow(spectrogram, aspect='auto', cmap='viridis', origin='lower')
+    plt.colorbar(label="Intensity (dB)")
+    plt.xlabel("Time Frames")
+    plt.ylabel("Frequency Bins")
+    plt.title(f"Spectrogram - Label: {label}")
+    plt.show()
 
 def testing_examples(model, test_dataset, device):
-    for i in range(0, 5):
-        img, label = test_dataset[randint(0, len(test_dataset)-1)]
-        plt.imshow(img[0], cmap='gray')
-        # plt.show()
+    for i in range(5):
+        img, label = test_dataset[randint(0, len(test_dataset) - 1)]
+        plot_spectrogram(img.cpu().numpy(), label)
         prediction = predict_image(img, model, device)
-        print('Label:', label, '- Predicted:', prediction, '✔' if label==prediction else '✖')
+        print('Label:', label, '- Predicted:', prediction, '✔' if label == prediction else '✖')
 
 def predict_image(img, model, device):
     xb = img.unsqueeze(0).to(device)
@@ -68,22 +86,29 @@ def predict_image(img, model, device):
     return preds[0].item()
 
 def training(model, train_loader, val_loader, loss_func, initial_learning_rate, epochs, patience, optim, device):
-    learning_rates = [initial_learning_rate, initial_learning_rate / 10, initial_learning_rate / 100, initial_learning_rate / 1000, initial_learning_rate / 10000]
+    learning_rates = [initial_learning_rate, initial_learning_rate / 10, initial_learning_rate / 100,
+                      initial_learning_rate / 1000, initial_learning_rate / 10000]
     current_learning_index = 0
     best_loss = float('inf')
     patience_counter = 0
 
+    train_losses = []
+    val_losses = []
+
     for epoch in range(epochs):
-        train_loss = model.train_epoch(train_loader, optim, loss_func,device)
-        val_result, val_accuracy = model.validate_epoch(val_loader, loss_func, device)
+        train_loss = model.train_epoch(train_loader, optim, loss_func, device)
+        val_loss, val_accuracy = model.validate_epoch(val_loader, loss_func, device)
 
-        print(f"Epoch {epoch + 1}/{epochs}, Train Loss: {train_loss:.6f}, Validation Loss: {val_result['val_loss']:.6f}")
-        print(f"Accuracy: {val_accuracy:.2f}%")
+        train_losses.append(train_loss)
+        val_losses.append(val_loss['val_loss'])
 
-        if val_result['val_loss'] < best_loss:
-            best_loss = val_result['val_loss']
+        print(f"Epoch {epoch + 1}/{epochs}, Train Loss: {train_loss:.6f}, Validation Loss: {val_loss['val_loss']:.6f}")
+        print(f"Validation Accuracy: {val_accuracy:.2f}%")
+
+        if val_loss['val_loss'] < best_loss:
+            best_loss = val_loss['val_loss']
             patience_counter = 0
-            print(f" - Validation Loss Improved To: {val_result['val_loss']:.6f}")
+            print(f" - Validation Loss Improved To: {val_loss['val_loss']:.6f}")
         else:
             patience_counter += 1
         if patience_counter >= patience:
@@ -98,6 +123,17 @@ def training(model, train_loader, val_loader, loss_func, initial_learning_rate, 
                 print(f"Stopping At Epoch: {epoch + 1} - Best Validation Loss: {best_loss:.6f}")
                 break
 
+    return train_losses, val_losses
+
+def plot_loss_progression(train_losses, val_losses):
+    plt.figure(figsize=(10, 5))
+    plt.plot(train_losses, label='Training Loss')
+    plt.plot(val_losses, label='Validation Loss')
+    plt.xlabel("Epochs")
+    plt.ylabel("Loss")
+    plt.title("Training and Validation Loss Progression")
+    plt.legend()
+    plt.show()
 
 def display(processor):
     print("\n--- Summary of Processed Files ---")
@@ -200,7 +236,7 @@ def main():
     in_feat, hidden_feat, out_feat = 40, [256, 128], 10
     conv_channels = [32, 64]
     initial_learning_rate = 0.01
-    epochs = 1000
+    epochs = 10
     patience = 5
     loss_func = nn.CrossEntropyLoss()
     optim_func = torch.optim.Adam
@@ -224,9 +260,9 @@ def main():
     test_size  = int(total_size * test_perc)
     train_data, valid_data, test_data = random_split(dataset, [train_size, valid_size, test_size])
 
-    train_loader = DataLoader(train_data, batch_size, train_shuffle)
-    val_loader = DataLoader(valid_data, batch_size, val_shuffle)
-    test_loader = DataLoader(test_data, batch_size)
+    train_loader = DataLoader(train_data, batch_size=batch_size, shuffle=train_shuffle, collate_fn=collate_fn)
+    val_loader = DataLoader(valid_data, batch_size=batch_size, shuffle=val_shuffle, collate_fn=collate_fn)
+    test_loader = DataLoader(test_data, batch_size=batch_size, collate_fn=collate_fn)
 
     # processor = AudioProcessor()
 
@@ -246,7 +282,9 @@ def main():
 
     optim = optim_func(model.parameters(), lr=initial_learning_rate)
 
-    timed_training(model, train_loader, val_loader, loss_func, initial_learning_rate, epochs, patience, optim, device)
+    train_losses, val_losses = timed_training(model, train_loader, val_loader, loss_func, initial_learning_rate, epochs, patience, optim, device)
+
+    plot_loss_progression(train_losses, val_losses)
 
     testing_examples(model, test_data, device)
     result = evaluate(model, test_loader, loss_func)  # Pass loss_func to evaluate()

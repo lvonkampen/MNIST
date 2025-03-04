@@ -9,7 +9,7 @@ class ConvBlock(nn.Module):
         self.conv = nn.Conv1d(in_channels, out_channels, kernel_size, padding=1)
         self.batch = nn.BatchNorm1d(out_channels)
         self.activation = activation
-        self.pool = nn.MaxPool1d(pool_size) # We use 1d pooling instead of 2 since it's a frequency
+        self.pool = nn.MaxPool1d(pool_size)
 
     def forward(self, x):
         x = self.conv(x)
@@ -27,26 +27,26 @@ class AudioMnistModel(nn.Module):
             self.conv_blocks.append(ConvBlock(activation, in_channels, out_channels))
             in_channels = out_channels
 
+        self.adaptive_pool = nn.AdaptiveAvgPool1d(25)
         self.flattened_size = self._calculate_flattened_size()
 
         layers = []
         prev_size = self.flattened_size
-
         for size in hidden_size:
             layers.append(nn.Linear(prev_size, size))
             layers.append(nn.BatchNorm1d(size))
             layers.append(activation)
             prev_size = size
-
         self.fc_layers = nn.Sequential(*layers)
         self.output_layer = nn.Linear(hidden_size[-1], output_size)
 
         self._initialize_weights()
 
     def _calculate_flattened_size(self): # mock MNIST model after convolutions
-        x = torch.zeros(1, 40, 100) # Simulated MFCC input (40 features -- 100 time steps)
+        x = torch.zeros(1, 40, 100)
         for conv_block in self.conv_blocks:
             x = conv_block(x)
+        x = self.adaptive_pool(x)
         return x.view(1, -1).size(1)
 
     def _initialize_weights(self):
@@ -67,11 +67,10 @@ class AudioMnistModel(nn.Module):
         x = x.to(next(self.parameters()).device)
         for conv_block in self.conv_blocks:
             x = conv_block(x)
-        x = x.flatten(start_dim=1) # outputs a 3d tensor (batch, channels, time_steps)
-
+        x = self.adaptive_pool(x)
+        x = x.flatten(start_dim=1)
         x = self.fc_layers(x)
         x = self.output_layer(x)
-
         return x
 
     def training_step(self, batch, loss_func):
