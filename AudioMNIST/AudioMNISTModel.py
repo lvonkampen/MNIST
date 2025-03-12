@@ -82,51 +82,52 @@ class AudioMnistModel(nn.Module):
     def train_epoch(self, train_loader, optim, loss_func, device):
         self.train()
         train_loss = 0
+        correct = 0
+        total = 0
         for batch in train_loader:
             images, labels = batch
             images, labels = images.to(device), labels.to(device)
 
             optim.zero_grad()
+            out = self(images)
             loss = self.training_step((images, labels), loss_func)
             loss.backward()
             optim.step()
 
             train_loss += loss.item()
-        return train_loss / len(train_loader)
+
+            _, preds = torch.max(out, dim=1)
+            correct += (preds == labels).sum().item()
+            total += labels.size(0)
+
+        avg_loss = train_loss / len(train_loader)
+        accuracy_percentage = (correct / total) * 100  # in percentage
+
+        return avg_loss, accuracy_percentage
 
     def validation_step(self, batch, loss_func):
         images, labels = batch
         device = next(self.parameters()).device
         images, labels = images.to(device), labels.to(device)
 
+        # Compute forward pass only once
         out = self(images)
         loss = loss_func(out, labels)
-        acc = accuracy(out, labels)
-        return {'val_loss': loss, 'val_acc': acc}
+        # Compute predictions only once from the same output
+        _, preds = torch.max(out, dim=1)
+        acc = (preds == labels).sum().item() / labels.size(0)
+        # Return results as tensors for consistency with validation_epoch_end
+        return {'val_loss': torch.tensor(loss.item()), 'val_acc': torch.tensor(acc)}
 
     def validate_epoch(self, val_loader, loss_func, device):
         self.eval()
-        correct = 0
-        total = 0
-
         val_results = []
         with torch.no_grad():
             for batch in val_loader:
-                images, labels = batch
-                images, labels = images.to(device), labels.to(device)
-
-                out = self(images)
-
-                loss = loss_func(out, labels)
-                acc = accuracy(out, labels)
-                val_results.append({'val_loss': loss, 'val_acc': acc})
-
-                _, preds = torch.max(out, dim=1)
-                correct += (preds == labels).sum().item()
-                total += labels.size(0)
-
-        accu = correct / total * 100
-        return self.validation_epoch_end(val_results), accu
+                result = self.validation_step(batch, loss_func)
+                val_results.append(result)
+        overall = self.validation_epoch_end(val_results)
+        return overall, overall['val_acc']
 
     def validation_epoch_end(self, outputs):
         batch_losses = [x['val_loss'] for x in outputs]
@@ -137,7 +138,3 @@ class AudioMnistModel(nn.Module):
 
     def epoch_end(self, epoch, result):
         print("Epoch [{}], val_loss: {:.4f}, val_acc: {:.4f}".format(epoch, result['val_loss'], result['val_acc']))
-
-def accuracy(outputs, labels):
-    _, preds = torch.max(outputs, dim = 1)
-    return torch.tensor(torch.sum(preds == labels).item()/ len(preds))

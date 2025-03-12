@@ -11,7 +11,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from random import randint
 
-from AudioMNISTModel import AudioMnistModel, accuracy
+from AudioMNISTModel import AudioMnistModel
 
 class CustomAudioMNISTDataset(Dataset):
     def __init__(self, root_dir, transform=None):
@@ -19,6 +19,7 @@ class CustomAudioMNISTDataset(Dataset):
         self.transform = transform
         self.filepaths = []
         self.labels = []
+        self.speakers = []
 
         for folder in os.listdir(root_dir):
             folder_path = os.path.join(root_dir, folder)
@@ -29,6 +30,7 @@ class CustomAudioMNISTDataset(Dataset):
                         label = int(filename.split("_")[0])
                         self.filepaths.append(filepath)
                         self.labels.append(label)
+                        self.speakers.append(folder)
 
     def __len__(self):
         return len(self.filepaths)
@@ -58,10 +60,10 @@ def evaluate(model, val_loader, loss_func):
 
 def timed_training(model, train_loader, val_loader, loss_func, initial_learning_rate, epochs, patience, optim, device):
     start_time = time.time()
-    train_losses, val_losses = training(model, train_loader, val_loader, loss_func, initial_learning_rate, epochs, patience, optim, device)
+    train_loss, val_loss, train_accu, val_accu = training(model, train_loader, val_loader, loss_func, initial_learning_rate, epochs, patience, optim, device)
     total_time = time.time() - start_time
     print(f"Total Elapsed Time: ", total_time)
-    return train_losses, val_losses
+    return train_loss, val_loss, train_accu, val_accu
 
 def plot_spectrogram(spectrogram, label):
     plt.figure(figsize=(8, 6))
@@ -94,16 +96,20 @@ def training(model, train_loader, val_loader, loss_func, initial_learning_rate, 
 
     train_losses = []
     val_losses = []
+    train_accuracies = []
+    val_accuracies = []
 
     for epoch in range(epochs):
-        train_loss = model.train_epoch(train_loader, optim, loss_func, device)
+        train_loss, train_accuracy = model.train_epoch(train_loader, optim, loss_func, device)
         val_loss, val_accuracy = model.validate_epoch(val_loader, loss_func, device)
 
         train_losses.append(train_loss)
         val_losses.append(val_loss['val_loss'])
+        train_accuracies.append(train_accuracy)
+        val_accuracies.append(val_accuracy)
 
-        print(f"Epoch {epoch + 1}/{epochs}, Train Loss: {train_loss:.6f}, Validation Loss: {val_loss['val_loss']:.6f}")
-        print(f"Validation Accuracy: {val_accuracy:.2f}%")
+        print(f"Epoch {epoch + 1}/{epochs}\nTrain Loss: {train_loss:.6f}, Train Accuracy: {train_accuracy:.2f}%")
+        print(f"Validation Loss: {val_loss['val_loss']:.6f}, Validation Accuracy: {val_accuracy:.2f}%")
 
         if val_loss['val_loss'] < best_loss:
             best_loss = val_loss['val_loss']
@@ -123,7 +129,7 @@ def training(model, train_loader, val_loader, loss_func, initial_learning_rate, 
                 print(f"Stopping At Epoch: {epoch + 1} - Best Validation Loss: {best_loss:.6f}")
                 break
 
-    return train_losses, val_losses
+    return train_losses, val_losses, train_accuracies, val_accuracies
 
 def plot_loss_progression(train_losses, val_losses):
     plt.figure(figsize=(10, 5))
@@ -233,10 +239,10 @@ def main():
     # HYPERPARAMETERS
     batch_size = 1024
     train_shuffle, val_shuffle = True, False
-    in_feat, hidden_feat, out_feat = 40, [256, 128], 10
+    in_feat, hidden_feat, out_feat = 40, [256, 128, 64], 10
     conv_channels = [32, 64]
     initial_learning_rate = 0.01
-    epochs = 10
+    epochs = 100
     patience = 5
     loss_func = nn.CrossEntropyLoss()
     optim_func = torch.optim.Adam
@@ -252,17 +258,30 @@ def main():
 
     script_dir = os.path.dirname(os.path.abspath(__file__))
     data_dir = os.path.join(script_dir, "data")
+    inference_dir = os.path.join(script_dir, "Inference-Scripts")
     dataset = CustomAudioMNISTDataset(root_dir=data_dir, transform=transform)
 
-    total_size = len(dataset)
-    train_size = int(total_size * train_perc)
-    valid_size = int(total_size * valid_perc)
-    test_size  = int(total_size * test_perc)
-    train_data, valid_data, test_data = random_split(dataset, [train_size, valid_size, test_size])
+    speakers = sorted(set(dataset.speakers))
+    num_speakers = len(speakers)
+    num_train = int(num_speakers * train_perc)
+    num_valid = int(num_speakers * valid_perc)
+    # The remaining speakers will be used for testing
+    train_speakers = speakers[:num_train]
+    valid_speakers = speakers[num_train:num_train+num_valid]
+    test_speakers  = speakers[num_train+num_valid:]
+
+    train_indices = [i for i, sp in enumerate(dataset.speakers) if sp in train_speakers]
+    valid_indices = [i for i, sp in enumerate(dataset.speakers) if sp in valid_speakers]
+    test_indices  = [i for i, sp in enumerate(dataset.speakers) if sp in test_speakers]
+
+    from torch.utils.data import Subset
+    train_data = Subset(dataset, train_indices)
+    valid_data = Subset(dataset, valid_indices)
+    test_data  = Subset(dataset, test_indices)
 
     train_loader = DataLoader(train_data, batch_size=batch_size, shuffle=train_shuffle, collate_fn=collate_fn)
-    val_loader = DataLoader(valid_data, batch_size=batch_size, shuffle=val_shuffle, collate_fn=collate_fn)
-    test_loader = DataLoader(test_data, batch_size=batch_size, collate_fn=collate_fn)
+    val_loader   = DataLoader(valid_data, batch_size=batch_size, shuffle=val_shuffle, collate_fn=collate_fn)
+    test_loader  = DataLoader(test_data, batch_size=batch_size, collate_fn=collate_fn)
 
     # processor = AudioProcessor()
 
@@ -282,7 +301,7 @@ def main():
 
     optim = optim_func(model.parameters(), lr=initial_learning_rate)
 
-    train_losses, val_losses = timed_training(model, train_loader, val_loader, loss_func, initial_learning_rate, epochs, patience, optim, device)
+    train_losses, val_losses, train_accu, val_accu = timed_training(model, train_loader, val_loader, loss_func, initial_learning_rate, epochs, patience, optim, device)
 
     plot_loss_progression(train_losses, val_losses)
 

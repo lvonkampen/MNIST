@@ -4,7 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="f68265ec-7205-435a-9d6b-6d0aa938573f" name="Changes" comment="Added Dataset and DataLoader&#10;Reinterpretted all ConvMNIST functions&#10;Improved consistency">
+    <list default="true" id="f68265ec-7205-435a-9d6b-6d0aa938573f" name="Changes" comment="Fixed padding error&#10;Modified and added dataplots">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/AudioMNIST/AudioMNISTMain.py" beforeDir="false" afterPath="$PROJECT_DIR$/AudioMNIST/AudioMNISTMain.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/AudioMNIST/AudioMNISTModel.py" beforeDir="false" afterPath="$PROJECT_DIR$/AudioMNIST/AudioMNISTModel.py" afterDir="false" />
@@ -148,7 +148,15 @@
       <option name="project" value="LOCAL" />
       <updated>1740922446820</updated>
     </task>
-    <option name="localTasksCounter" value="8" />
+    <task id="LOCAL-00008" summary="Fixed padding error&#10;Modified and added dataplots">
+      <option name="closed" value="true" />
+      <created>1741084127810</created>
+      <option name="number" value="00008" />
+      <option name="presentableId" value="LOCAL-00008" />
+      <option name="project" value="LOCAL" />
+      <updated>1741084127810</updated>
+    </task>
+    <option name="localTasksCounter" value="9" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
@@ -156,6 +164,7 @@
     <MESSAGE value="audio updated" />
     <MESSAGE value="formatting improved" />
     <MESSAGE value="Added Dataset and DataLoader&#10;Reinterpretted all ConvMNIST functions&#10;Improved consistency" />
-    <option name="LAST_COMMIT_MESSAGE" value="Added Dataset and DataLoader&#10;Reinterpretted all ConvMNIST functions&#10;Improved consistency" />
+    <MESSAGE value="Fixed padding error&#10;Modified and added dataplots" />
+    <option name="LAST_COMMIT_MESSAGE" value="Fixed padding error&#10;Modified and added dataplots" />
   </component>
 </project>
