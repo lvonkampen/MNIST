@@ -4,12 +4,14 @@ import torch
 import torch.nn as nn
 import torchaudio
 import torchaudio.transforms as T
-from torch.utils.data import Dataset, DataLoader, random_split
+from numba.core.typing.dictdecl import infer
+from torch.utils.data import Dataset, DataLoader, Subset
 
 import wave as wav
+import subprocess
 import numpy as np
 import matplotlib.pyplot as plt
-from random import randint
+from random import randint, shuffle
 
 from AudioMNISTModel import AudioMnistModel
 
@@ -47,6 +49,23 @@ class CustomAudioMNISTDataset(Dataset):
             mfcc = waveform
         return mfcc, label
 
+
+def convert_m4a_to_wav(input_dir, output_dir):
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+
+    for filename in os.listdir(input_dir):
+        if filename.endswith(".m4a"):
+            input_path = os.path.join(input_dir, filename)
+            output_filename = os.path.splitext(filename)[0] + ".wav"
+            output_path = os.path.join(output_dir, output_filename)
+
+            command = ["C:\\FFmpeg\\ffmpeg.exe", "-i", input_path, output_path]
+            print(f"Running command: {command}")
+            subprocess.run(command)
+
+            print(f"Converted: {filename} -> {output_filename}")
+
 def collate_fn(batch):
     inputs, labels = zip(*batch)
     inputs_transposed = [inp.transpose(0, 1) for inp in inputs]  # each becomes [T, 40]
@@ -77,7 +96,7 @@ def plot_spectrogram(spectrogram, label):
 def testing_examples(model, test_dataset, device):
     for i in range(5):
         img, label = test_dataset[randint(0, len(test_dataset) - 1)]
-        plot_spectrogram(img.cpu().numpy(), label)
+        # plot_spectrogram(img.cpu().numpy(), label)
         prediction = predict_image(img, model, device)
         print('Label:', label, '- Predicted:', prediction, '✔' if label == prediction else '✖')
 
@@ -86,6 +105,78 @@ def predict_image(img, model, device):
     yb = model(xb)
     _, preds = torch.max(yb, dim = 1)
     return preds[0].item()
+
+def split_speakers(root_dir, train_perc=0.7, val_perc=0.2):
+    speaker_folders = [d for d in os.listdir(root_dir)
+                       if os.path.isdir(os.path.join(root_dir, d))]
+    shuffle(speaker_folders)
+
+    total = len(speaker_folders)
+    num_train = int(total * train_perc)
+    num_val = int(total * val_perc)
+
+    train_speakers = speaker_folders[:num_train]
+    val_speakers   = speaker_folders[num_train:num_train + num_val]
+    test_speakers  = speaker_folders[num_train + num_val:]
+
+    return train_speakers, val_speakers, test_speakers
+
+class SpeakerDataset(Dataset):
+    def __init__(self, file_paths, labels, transform=None):
+        self.file_paths = file_paths
+        self.labels = labels
+        self.transform = transform
+
+    def __len__(self):
+        return len(self.file_paths)
+
+    def __getitem__(self, idx):
+        path = self.file_paths[idx]
+        label = self.labels[idx]
+
+        waveform, sample_rate = torchaudio.load(path)
+
+        if self.transform:
+            mfcc = self.transform(waveform)
+            mfcc = mfcc.squeeze(0)
+        else:
+            mfcc = waveform
+
+        return mfcc, label
+
+def collect_files(root_dir, speakers):
+    file_paths = []
+    labels = []
+
+    for speaker_folder in speakers:
+        folder_path = os.path.join(root_dir, speaker_folder)
+        for fname in os.listdir(folder_path):
+            if fname.endswith(".wav"):
+                path = os.path.join(folder_path, fname)
+                label_str = fname.split("_")[0]
+                label = int(label_str)
+                file_paths.append(path)
+                labels.append(label)
+
+    return file_paths, labels
+
+def load_inference_audio(file_path, transform):
+    waveform, sample_rate = torchaudio.load(file_path)
+    mfcc = transform(waveform)
+    mfcc = mfcc.squeeze(0)
+    print("File working!")
+
+    return mfcc
+
+def run_inference_on_all(model, inference_dir, transform, device):
+    print("\n--- Running Inference on Inference-Scripts Folder ---")
+
+    for filename in os.listdir(inference_dir):
+        if filename.endswith(".wav"):
+            file_path = os.path.join(inference_dir, filename)
+            inference_audio = load_inference_audio(file_path, transform)
+            prediction = predict_image(inference_audio, model, device)
+            print(f"File: {filename} → Predicted Label: {prediction}")
 
 def training(model, train_loader, val_loader, loss_func, initial_learning_rate, epochs, patience, optim, device):
     learning_rates = [initial_learning_rate, initial_learning_rate / 10, initial_learning_rate / 100,
@@ -108,8 +199,9 @@ def training(model, train_loader, val_loader, loss_func, initial_learning_rate, 
         train_accuracies.append(train_accuracy)
         val_accuracies.append(val_accuracy)
 
+        # Assuming val_accuracy is in fraction format and needs scaling
         print(f"Epoch {epoch + 1}/{epochs}\nTrain Loss: {train_loss:.6f}, Train Accuracy: {train_accuracy:.2f}%")
-        print(f"Validation Loss: {val_loss['val_loss']:.6f}, Validation Accuracy: {val_accuracy:.2f}%")
+        print(f"Validation Loss: {val_loss['val_loss']:.6f}, Validation Accuracy: {val_accuracy * 100:.2f}%")
 
         if val_loss['val_loss'] < best_loss:
             best_loss = val_loss['val_loss']
@@ -181,7 +273,6 @@ def display(processor):
 
 class AudioProcessor:
     def __init__(self):
-        # Initialize lists to store stats for each file processed
         self.t_shape = []
         self.t_min = []
         self.t_max = []
@@ -242,7 +333,7 @@ def main():
     in_feat, hidden_feat, out_feat = 40, [256, 128, 64], 10
     conv_channels = [32, 64]
     initial_learning_rate = 0.01
-    epochs = 100
+    epochs = 1000
     patience = 5
     loss_func = nn.CrossEntropyLoss()
     optim_func = torch.optim.Adam
@@ -258,30 +349,25 @@ def main():
 
     script_dir = os.path.dirname(os.path.abspath(__file__))
     data_dir = os.path.join(script_dir, "data")
-    inference_dir = os.path.join(script_dir, "Inference-Scripts")
+
+    # convert_m4a_to_wav(inference_dir, inference_dir) # this will generate .wav duplicates
+
     dataset = CustomAudioMNISTDataset(root_dir=data_dir, transform=transform)
 
-    speakers = sorted(set(dataset.speakers))
-    num_speakers = len(speakers)
-    num_train = int(num_speakers * train_perc)
-    num_valid = int(num_speakers * valid_perc)
-    # The remaining speakers will be used for testing
-    train_speakers = speakers[:num_train]
-    valid_speakers = speakers[num_train:num_train+num_valid]
-    test_speakers  = speakers[num_train+num_valid:]
+    train_speakers, val_speakers, test_speakers = split_speakers(data_dir)
 
-    train_indices = [i for i, sp in enumerate(dataset.speakers) if sp in train_speakers]
-    valid_indices = [i for i, sp in enumerate(dataset.speakers) if sp in valid_speakers]
-    test_indices  = [i for i, sp in enumerate(dataset.speakers) if sp in test_speakers]
+    train_files, train_labels = collect_files(data_dir, train_speakers)
+    val_files, val_labels = collect_files(data_dir, val_speakers)
+    test_files, test_labels = collect_files(data_dir, test_speakers)
 
-    from torch.utils.data import Subset
-    train_data = Subset(dataset, train_indices)
-    valid_data = Subset(dataset, valid_indices)
-    test_data  = Subset(dataset, test_indices)
+    train_data = SpeakerDataset(train_files, train_labels, transform=transform)
+    val_data = SpeakerDataset(val_files, val_labels, transform=transform)
+    test_data = SpeakerDataset(test_files, test_labels, transform=transform)
 
-    train_loader = DataLoader(train_data, batch_size=batch_size, shuffle=train_shuffle, collate_fn=collate_fn)
-    val_loader   = DataLoader(valid_data, batch_size=batch_size, shuffle=val_shuffle, collate_fn=collate_fn)
-    test_loader  = DataLoader(test_data, batch_size=batch_size, collate_fn=collate_fn)
+    # 5) Create DataLoaders
+    train_loader = DataLoader(train_data, batch_size=batch_size, shuffle=True, collate_fn=collate_fn)
+    val_loader = DataLoader(val_data, batch_size=batch_size, shuffle=False, collate_fn=collate_fn)
+    test_loader = DataLoader(test_data, batch_size=batch_size, shuffle=False, collate_fn=collate_fn)
 
     # processor = AudioProcessor()
 
@@ -303,12 +389,24 @@ def main():
 
     train_losses, val_losses, train_accu, val_accu = timed_training(model, train_loader, val_loader, loss_func, initial_learning_rate, epochs, patience, optim, device)
 
-    plot_loss_progression(train_losses, val_losses)
+    # plot_loss_progression(train_losses, val_losses)
 
     testing_examples(model, test_data, device)
     result = evaluate(model, test_loader, loss_func)  # Pass loss_func to evaluate()
     print(f"Test Loss: {result['val_loss']:.4f}, Test Accuracy: {result['val_acc']:.2f}%")
 
+    torch.save(model.state_dict(), "AudioMNISTModel.pth")
+    print("Model saved as 'AudioMNISTModel.pth'")
 
 if __name__ == "__main__":
     main()
+
+# NEW DATASETS:
+
+#       UrbanSounds8K          - Contains 8732 labeled sound excerpts (<=4s) of urban sounds from 10 classes: air_conditioner, car_horn, children_playing, dog_bark...
+
+#       FluentSpeechCommands   - Commands spoken in natural language for virtual assistants (e.g., "Turn the lights on in the kitchen"). 30000 utterances
+#                                Labels: Actions(activate, increase, decrease), object(lights, music), and location(kitchen, bedroom).
+
+#       Google Speech Commands - Small dataset of simple voice commands like “yes,” “no,” “left,” “right,” “stop,” “go”. 105000 utterances from 35 different categories
+#                              - Labels: Predefined classes like "up," "down," "stop," "go."

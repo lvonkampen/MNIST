@@ -4,10 +4,10 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="f68265ec-7205-435a-9d6b-6d0aa938573f" name="Changes" comment="Fixed padding error&#10;Modified and added dataplots">
+    <list default="true" id="f68265ec-7205-435a-9d6b-6d0aa938573f" name="Changes" comment="Added Training Accuracy&#10;Corrected random_split&#10;- Still need to implement inference scripts">
+      <change afterPath="$PROJECT_DIR$/AudioMNIST/AudioMNISTInference.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/AudioMNIST/AudioMNISTMain.py" beforeDir="false" afterPath="$PROJECT_DIR$/AudioMNIST/AudioMNISTMain.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/AudioMNIST/AudioMNISTModel.py" beforeDir="false" afterPath="$PROJECT_DIR$/AudioMNIST/AudioMNISTModel.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -51,24 +51,25 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;Python.12-03-24_DatasetPractice.executor&quot;: &quot;Run&quot;,
-    &quot;Python.12-04-24_MNISTPractice.executor&quot;: &quot;Run&quot;,
-    &quot;Python.12-11-24_MNISTMain.executor&quot;: &quot;Run&quot;,
-    &quot;Python.12-11-24_MNISTModel.executor&quot;: &quot;Run&quot;,
-    &quot;Python.AudioMNISTMain.executor&quot;: &quot;Run&quot;,
-    &quot;Python.AudioMNISTModel.executor&quot;: &quot;Run&quot;,
-    &quot;Python.ConvMNISTMain.executor&quot;: &quot;Run&quot;,
-    &quot;Python.ConvMNISTModel.executor&quot;: &quot;Run&quot;,
-    &quot;Python.MNISTMain.executor&quot;: &quot;Run&quot;,
-    &quot;Python.MNISTModel.executor&quot;: &quot;Run&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
-    &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
-    &quot;last_opened_file_path&quot;: &quot;C:/Users/GoatF/Downloads/AI_Practice&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "Python.12-03-24_DatasetPractice.executor": "Run",
+    "Python.12-04-24_MNISTPractice.executor": "Run",
+    "Python.12-11-24_MNISTMain.executor": "Run",
+    "Python.12-11-24_MNISTModel.executor": "Run",
+    "Python.AudioMNISTInference.executor": "Run",
+    "Python.AudioMNISTMain.executor": "Run",
+    "Python.AudioMNISTModel.executor": "Run",
+    "Python.ConvMNISTMain.executor": "Run",
+    "Python.ConvMNISTModel.executor": "Run",
+    "Python.MNISTMain.executor": "Run",
+    "Python.MNISTModel.executor": "Run",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "git-widget-placeholder": "main",
+    "ignore.virus.scanning.warn.message": "true",
+    "last_opened_file_path": "C:/Users/GoatF/Downloads/AI_Practice"
   }
-}</component>
+}]]></component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
       <recent name="C:\Users\GoatF\Downloads\AI_Practice\MNIST" />
@@ -156,7 +157,15 @@
       <option name="project" value="LOCAL" />
       <updated>1741084127810</updated>
     </task>
-    <option name="localTasksCounter" value="9" />
+    <task id="LOCAL-00009" summary="Added Training Accuracy&#10;Corrected random_split&#10;- Still need to implement inference scripts">
+      <option name="closed" value="true" />
+      <created>1741768708693</created>
+      <option name="number" value="00009" />
+      <option name="presentableId" value="LOCAL-00009" />
+      <option name="project" value="LOCAL" />
+      <updated>1741768708693</updated>
+    </task>
+    <option name="localTasksCounter" value="10" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
@@ -165,6 +174,18 @@
     <MESSAGE value="formatting improved" />
     <MESSAGE value="Added Dataset and DataLoader&#10;Reinterpretted all ConvMNIST functions&#10;Improved consistency" />
     <MESSAGE value="Fixed padding error&#10;Modified and added dataplots" />
-    <option name="LAST_COMMIT_MESSAGE" value="Fixed padding error&#10;Modified and added dataplots" />
+    <MESSAGE value="Added Training Accuracy&#10;Corrected random_split&#10;- Still need to implement inference scripts" />
+    <option name="LAST_COMMIT_MESSAGE" value="Added Training Accuracy&#10;Corrected random_split&#10;- Still need to implement inference scripts" />
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/AudioMNIST/AudioMNISTMain.py</url>
+          <line>56</line>
+          <option name="timeStamp" value="1" />
+        </line-breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
   </component>
 </project>
