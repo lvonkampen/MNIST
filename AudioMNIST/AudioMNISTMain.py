@@ -334,7 +334,7 @@ def main():
     conv_channels = [32, 64]
     initial_learning_rate = 0.01
     epochs = 1000
-    patience = 5
+    patience = 2
     loss_func = nn.CrossEntropyLoss()
     optim_func = torch.optim.Adam
     activation = nn.ReLU()
@@ -389,7 +389,7 @@ def main():
 
     train_losses, val_losses, train_accu, val_accu = timed_training(model, train_loader, val_loader, loss_func, initial_learning_rate, epochs, patience, optim, device)
 
-    # plot_loss_progression(train_losses, val_losses)
+    plot_loss_progression(train_losses, val_losses)
 
     testing_examples(model, test_data, device)
     result = evaluate(model, test_loader, loss_func)  # Pass loss_func to evaluate()
@@ -401,6 +401,10 @@ def main():
 if __name__ == "__main__":
     main()
 
+#       > record yourself a few ways
+#       > save plt_plot
+#       > implement scikit (recall, precision, F1)
+
 # NEW DATASETS:
 
 #       UrbanSounds8K          - Contains 8732 labeled sound excerpts (<=4s) of urban sounds from 10 classes: air_conditioner, car_horn, children_playing, dog_bark...
@@ -408,5 +412,8 @@ if __name__ == "__main__":
 #       FluentSpeechCommands   - Commands spoken in natural language for virtual assistants (e.g., "Turn the lights on in the kitchen"). 30000 utterances
 #                                Labels: Actions(activate, increase, decrease), object(lights, music), and location(kitchen, bedroom).
 
-#       Google Speech Commands - Small dataset of simple voice commands like “yes,” “no,” “left,” “right,” “stop,” “go”. 105000 utterances from 35 different categories
+#       ***Google Speech Commands - Small dataset of simple voice commands like “yes,” “no,” “left,” “right,” “stop,” “go”. 105000 utterances from 35 different categories
 #                              - Labels: Predefined classes like "up," "down," "stop," "go."
+#               > Get data / check difference __ ultimately try to get it to classify
+
+#       TED-LIUM

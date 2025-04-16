@@ -4,8 +4,10 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="f68265ec-7205-435a-9d6b-6d0aa938573f" name="Changes" comment="Added Training Accuracy&#10;Corrected random_split&#10;- Still need to implement inference scripts">
-      <change afterPath="$PROJECT_DIR$/AudioMNIST/AudioMNISTInference.py" afterDir="false" />
+    <list default="true" id="f68265ec-7205-435a-9d6b-6d0aa938573f" name="Changes" comment="Overhauled Inference / Splitting Procedure">
+      <change afterPath="$PROJECT_DIR$/GoogleSpeechCommands/GoogleInference.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/GoogleSpeechCommands/GoogleMain.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/GoogleSpeechCommands/GoogleModel.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/AudioMNIST/AudioMNISTMain.py" beforeDir="false" afterPath="$PROJECT_DIR$/AudioMNIST/AudioMNISTMain.py" afterDir="false" />
     </list>
@@ -62,6 +64,8 @@
     "Python.AudioMNISTModel.executor": "Run",
     "Python.ConvMNISTMain.executor": "Run",
     "Python.ConvMNISTModel.executor": "Run",
+    "Python.GoogleMain.executor": "Run",
+    "Python.GoogleModel.executor": "Run",
     "Python.MNISTMain.executor": "Run",
     "Python.MNISTModel.executor": "Run",
     "RunOnceActivity.ShowReadmeOnStart": "true",
@@ -165,7 +169,15 @@
       <option name="project" value="LOCAL" />
       <updated>1741768708693</updated>
     </task>
-    <option name="localTasksCounter" value="10" />
+    <task id="LOCAL-00010" summary="Overhauled Inference / Splitting Procedure">
+      <option name="closed" value="true" />
+      <created>1743576689603</created>
+      <option name="number" value="00010" />
+      <option name="presentableId" value="LOCAL-00010" />
+      <option name="project" value="LOCAL" />
+      <updated>1743576689603</updated>
+    </task>
+    <option name="localTasksCounter" value="11" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
@@ -175,17 +187,7 @@
     <MESSAGE value="Added Dataset and DataLoader&#10;Reinterpretted all ConvMNIST functions&#10;Improved consistency" />
     <MESSAGE value="Fixed padding error&#10;Modified and added dataplots" />
     <MESSAGE value="Added Training Accuracy&#10;Corrected random_split&#10;- Still need to implement inference scripts" />
-    <option name="LAST_COMMIT_MESSAGE" value="Added Training Accuracy&#10;Corrected random_split&#10;- Still need to implement inference scripts" />
-  </component>
-  <component name="XDebuggerManager">
-    <breakpoint-manager>
-      <breakpoints>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/AudioMNIST/AudioMNISTMain.py</url>
-          <line>56</line>
-          <option name="timeStamp" value="1" />
-        </line-breakpoint>
-      </breakpoints>
-    </breakpoint-manager>
+    <MESSAGE value="Overhauled Inference / Splitting Procedure" />
+    <option name="LAST_COMMIT_MESSAGE" value="Overhauled Inference / Splitting Procedure" />
   </component>
 </project>
