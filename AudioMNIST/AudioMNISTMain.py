@@ -338,9 +338,6 @@ def main():
     loss_func = nn.CrossEntropyLoss()
     optim_func = torch.optim.Adam
     activation = nn.ReLU()
-    train_perc = 0.7
-    valid_perc = 0.2
-    test_perc = 0.1
     transform = T.MFCC(sample_rate=16000,             # Hz
                        n_mfcc=in_feat,                # Number of features
                        melkwargs={"n_mels": 64,       # Bins in spectrogram

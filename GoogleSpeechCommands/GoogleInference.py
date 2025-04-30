@@ -33,7 +33,6 @@ def run_inference(model, inference_dir, transform, device):
             prediction = predict_image(inference_audio, model, device)
             print(f"File: {filename} → Predicted Label: {prediction}")
 
-# Prediction function
 def predict_image(img, model, device):
     xb = img.unsqueeze(0).to(device)
     yb = model(xb)
@@ -42,8 +41,8 @@ def predict_image(img, model, device):
 
 def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model = load_model("AudioMNISTModel.pth", device)
-    inference_dir = "C:/Users/GoatF/Downloads/AI_Practice/AudioMNIST/Inference-Scripts"
+    model = load_model("GoogleSpeechCommandsModel.pth", device)
+    inference_dir = "C:/Users/GoatF/Downloads/AI_Practice/GoogleSpeechCommandsModel/Inference-Scripts" # NOT EXISTING YET
 
     transform = T.MFCC(sample_rate=16000, n_mfcc=40, melkwargs={"n_mels": 64, "n_fft": 400, "hop_length": 160})
 
@@ -51,3 +50,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+#

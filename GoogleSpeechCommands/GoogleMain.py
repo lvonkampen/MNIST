@@ -214,3 +214,5 @@ if __name__ == "__main__":
     main()
 
 # use scikit to label recall / precision / F1
+# see if we can nerf the model - use half the channels / lower the number of speakers ,
+# VIA Animation Tool
