@@ -4,17 +4,13 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="f68265ec-7205-435a-9d6b-6d0aa938573f" name="Changes" comment="Optimized Google files and created single file support for WhisperVIA conversion.">
-      <change afterPath="$PROJECT_DIR$/WhisperVIA/WhisperVIACSVtoJSON.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/WhisperVIA/WhisperVIAConfig.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/WhisperVIA/WhisperVIADataset.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/WhisperVIA/WhisperVIAInference.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/WhisperVIA/WhisperVIAMain.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/WhisperVIA/WhisperVIAModel.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/WhisperVIA/WhisperVIASummarize.py" afterDir="false" />
+    <list default="true" id="f68265ec-7205-435a-9d6b-6d0aa938573f" name="Changes" comment="Created WhisperVIA configuration">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/AudioMNIST/AudioMNISTMain.py" beforeDir="false" afterPath="$PROJECT_DIR$/AudioMNIST/AudioMNISTMain.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/WhisperVIA/WhisperVIAConfig.py" beforeDir="false" afterPath="$PROJECT_DIR$/WhisperVIA/WhisperVIAConfig.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/WhisperVIA/WhisperVIAConversion.py" beforeDir="false" afterPath="$PROJECT_DIR$/WhisperVIA/WhisperVIAConversion.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/WhisperVIA/WhisperVIAInference.py" beforeDir="false" afterPath="$PROJECT_DIR$/WhisperVIA/WhisperVIAInference.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/WhisperVIA/WhisperVIAMain.py" beforeDir="false" afterPath="$PROJECT_DIR$/WhisperVIA/WhisperVIAMain.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/WhisperVIA/WhisperVIASummarize.py" beforeDir="false" afterPath="$PROJECT_DIR$/WhisperVIA/WhisperVIASummarize.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -80,6 +76,7 @@
     &quot;Python.WhisperVIAInference.executor&quot;: &quot;Run&quot;,
     &quot;Python.WhisperVIAMain.executor&quot;: &quot;Run&quot;,
     &quot;Python.WhisperVIAModel.executor&quot;: &quot;Run&quot;,
+    &quot;Python.WhisperVIASummarize.executor&quot;: &quot;Run&quot;,
     &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
     &quot;git-widget-placeholder&quot;: &quot;main&quot;,
     &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
@@ -206,7 +203,15 @@
       <option name="project" value="LOCAL" />
       <updated>1746002501693</updated>
     </task>
-    <option name="localTasksCounter" value="13" />
+    <task id="LOCAL-00013" summary="Created WhisperVIA configuration">
+      <option name="closed" value="true" />
+      <created>1750816976665</created>
+      <option name="number" value="00013" />
+      <option name="presentableId" value="LOCAL-00013" />
+      <option name="project" value="LOCAL" />
+      <updated>1750816976665</updated>
+    </task>
+    <option name="localTasksCounter" value="14" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
@@ -219,6 +224,7 @@
     <MESSAGE value="Overhauled Inference / Splitting Procedure" />
     <MESSAGE value="Implemented GoogleSpeechCommands using most of the code from AudioMNIST." />
     <MESSAGE value="Optimized Google files and created single file support for WhisperVIA conversion." />
-    <option name="LAST_COMMIT_MESSAGE" value="Optimized Google files and created single file support for WhisperVIA conversion." />
+    <MESSAGE value="Created WhisperVIA configuration" />
+    <option name="LAST_COMMIT_MESSAGE" value="Created WhisperVIA configuration" />
   </component>
 </project>

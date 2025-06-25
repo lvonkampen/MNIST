@@ -94,7 +94,7 @@ def run_inference_from_via_csv(via_csv, wav_path, model, transform, device):
         extract_audio(wav_path, start, end, tmp_wav)
 
         wf, _ = torchaudio.load(tmp_wav)
-        mfcc = transform(wf).squeeze(0).unsqueeze(0).to(device)
+        mfcc = transform(wf).to(device)
 
         with torch.no_grad():
             label_idx = torch.argmax(model(mfcc), dim=1).item()
@@ -120,11 +120,11 @@ if __name__=="__main__":
 
     csv = 'C:\\Users\\GoatF\\Downloads\\AI_Practice\\WhisperVIA\\csv_annotations\\00000_000_001_annotation.csv'
     wav = 'C:\\Users\\GoatF\\Downloads\\AI_Practice\\WhisperVIA\\raudio\\00000_000_001.wav'
-    model_path = 'C:\\Users\\GoatF\\Downloads\\AI_Practice\\WhisperVIA\\WhisperVIAModel.pth'
+    model_path = 'C:\\Users\\GoatF\\Downloads\\AI_Practice\\WhisperVIA\\WhisperVIAModel_NEW.pth'
 
     model = load_model(model_path, Hyperparameters.device)
 
-    predictions_seq = testing_examples(model, test_loader, Hyperparameters.max_examples, Hyperparameters.device)
+    testing_examples(model, test_loader, Hyperparameters.max_examples, Hyperparameters.device)
     # FINISH WORKING ON TESTING EXAMPLES TO PROVIDE TEMPORAL_COORDS + ASSOCIATED PREDS
 
     run_inference_from_via_csv(csv, wav, model, Hyperparameters.transform, Hyperparameters.device)

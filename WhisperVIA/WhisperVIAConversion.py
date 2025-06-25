@@ -5,16 +5,16 @@ import time
 import uuid
 
 
-def create_new_via_project(tsv_path, output_path):
-    tsv_basename = os.path.splitext(os.path.basename(tsv_path))[0]
-    new_fname = tsv_basename + '.mp4'
+def create_new_via_project(csv_path, output_path):
+    csv_basename = os.path.splitext(os.path.basename(csv_path))[0]
+    new_fname = csv_basename + '.mp4'
 
     via_project = {
         "project": {
             "pid": "__VIA_PROJECT_ID__",
             "rev": "__VIA_PROJECT_REV_ID__",
             "rev_timestamp": "__VIA_PROJECT_REV_TIMESTAMP__",
-            "pname": tsv_basename,
+            "pname": csv_basename,
             "creator": "WhisperVIA",
             "created": int(time.time() * 1000),
             "vid_list": ["1"]
@@ -62,7 +62,7 @@ def create_new_via_project(tsv_path, output_path):
         }
     }
 
-    read = pd.read_csv(tsv_path, sep='\t')
+    read = pd.read_csv(csv_path, sep='\t')
 
     for ids, row in read.iterrows():
         start_m = row['start']
@@ -88,11 +88,11 @@ def create_new_via_project(tsv_path, output_path):
         json.dump(via_project, f, ensure_ascii=False, indent=2)
 
 if __name__ == '__main__':
-    tsv_path = '00000_000_001.tsv'
+    csv_path = '00000_000_001.tsv'
     output_path = '00000_000_001.json'
 
     print("Starting WhisperVIA Conversion...")
-    create_new_via_project(tsv_path, output_path)
+    create_new_via_project(csv_path, output_path)
     print("...WhisperVIA Conversion Complete!")
 
     # Get annotation document rules  from Shardul - Remind the professor when he sends it

@@ -75,7 +75,7 @@ def testing_examples(model, test_dataset, max_examples, device):
             predictions_sequenced.append(raw_prediction)
             prediction = quantize(raw_prediction)
             print(f'Label:', label.item(), '- Predicted:', prediction, '\t', '✔' if label == prediction else '✖', ' - Raw Prediction:', raw_prediction)
-    return label, predictions_sequenced
+    return predictions_sequenced
 
 
 def predict_image(img, model, device):

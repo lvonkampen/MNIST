@@ -22,6 +22,7 @@ class Hyperparameters:
         melkwargs={"n_mels": 64, "n_fft": 400, "hop_length": 160}
     )
     max_examples = 5
+    max_duration = 300.0
 
     script_dir = os.path.dirname(os.path.abspath(__file__))
     audio_dir = os.path.join(script_dir, "raudio")
