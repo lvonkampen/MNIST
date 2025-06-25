@@ -4,12 +4,17 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="f68265ec-7205-435a-9d6b-6d0aa938573f" name="Changes" comment="Overhauled Inference / Splitting Procedure">
-      <change afterPath="$PROJECT_DIR$/GoogleSpeechCommands/GoogleInference.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/GoogleSpeechCommands/GoogleMain.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/GoogleSpeechCommands/GoogleModel.py" afterDir="false" />
+    <list default="true" id="f68265ec-7205-435a-9d6b-6d0aa938573f" name="Changes" comment="Optimized Google files and created single file support for WhisperVIA conversion.">
+      <change afterPath="$PROJECT_DIR$/WhisperVIA/WhisperVIACSVtoJSON.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/WhisperVIA/WhisperVIAConfig.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/WhisperVIA/WhisperVIADataset.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/WhisperVIA/WhisperVIAInference.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/WhisperVIA/WhisperVIAMain.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/WhisperVIA/WhisperVIAModel.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/WhisperVIA/WhisperVIASummarize.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/AudioMNIST/AudioMNISTMain.py" beforeDir="false" afterPath="$PROJECT_DIR$/AudioMNIST/AudioMNISTMain.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/WhisperVIA/WhisperVIAConversion.py" beforeDir="false" afterPath="$PROJECT_DIR$/WhisperVIA/WhisperVIAConversion.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -53,29 +58,37 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "Python.12-03-24_DatasetPractice.executor": "Run",
-    "Python.12-04-24_MNISTPractice.executor": "Run",
-    "Python.12-11-24_MNISTMain.executor": "Run",
-    "Python.12-11-24_MNISTModel.executor": "Run",
-    "Python.AudioMNISTInference.executor": "Run",
-    "Python.AudioMNISTMain.executor": "Run",
-    "Python.AudioMNISTModel.executor": "Run",
-    "Python.ConvMNISTMain.executor": "Run",
-    "Python.ConvMNISTModel.executor": "Run",
-    "Python.GoogleMain.executor": "Run",
-    "Python.GoogleModel.executor": "Run",
-    "Python.MNISTMain.executor": "Run",
-    "Python.MNISTModel.executor": "Run",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "git-widget-placeholder": "main",
-    "ignore.virus.scanning.warn.message": "true",
-    "last_opened_file_path": "C:/Users/GoatF/Downloads/AI_Practice"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;Python.12-03-24_DatasetPractice.executor&quot;: &quot;Run&quot;,
+    &quot;Python.12-04-24_MNISTPractice.executor&quot;: &quot;Run&quot;,
+    &quot;Python.12-11-24_MNISTMain.executor&quot;: &quot;Run&quot;,
+    &quot;Python.12-11-24_MNISTModel.executor&quot;: &quot;Run&quot;,
+    &quot;Python.AudioMNISTInference.executor&quot;: &quot;Run&quot;,
+    &quot;Python.AudioMNISTMain.executor&quot;: &quot;Run&quot;,
+    &quot;Python.AudioMNISTModel.executor&quot;: &quot;Run&quot;,
+    &quot;Python.ConvMNISTMain.executor&quot;: &quot;Run&quot;,
+    &quot;Python.ConvMNISTModel.executor&quot;: &quot;Run&quot;,
+    &quot;Python.GoogleMain.executor&quot;: &quot;Run&quot;,
+    &quot;Python.GoogleModel.executor&quot;: &quot;Run&quot;,
+    &quot;Python.MNISTMain.executor&quot;: &quot;Run&quot;,
+    &quot;Python.MNISTModel.executor&quot;: &quot;Run&quot;,
+    &quot;Python.WhisperVIACSVtoJSON.executor&quot;: &quot;Run&quot;,
+    &quot;Python.WhisperVIAConfig.executor&quot;: &quot;Run&quot;,
+    &quot;Python.WhisperVIAConversion.executor&quot;: &quot;Run&quot;,
+    &quot;Python.WhisperVIADataset.executor&quot;: &quot;Run&quot;,
+    &quot;Python.WhisperVIAInference.executor&quot;: &quot;Run&quot;,
+    &quot;Python.WhisperVIAMain.executor&quot;: &quot;Run&quot;,
+    &quot;Python.WhisperVIAModel.executor&quot;: &quot;Run&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
+    &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;C:/Users/GoatF/Downloads/AI_Practice&quot;
   }
-}]]></component>
+}</component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Users\GoatF\Downloads\AI_Practice\WhisperVIA" />
       <recent name="C:\Users\GoatF\Downloads\AI_Practice\MNIST" />
       <recent name="C:\Users\GoatF\Downloads\AI_Practice\AudioMNIST" />
       <recent name="C:\Users\GoatF\Downloads\AI_Practice\MNISTPractice" />
@@ -177,7 +190,23 @@
       <option name="project" value="LOCAL" />
       <updated>1743576689603</updated>
     </task>
-    <option name="localTasksCounter" value="11" />
+    <task id="LOCAL-00011" summary="Implemented GoogleSpeechCommands using most of the code from AudioMNIST.">
+      <option name="closed" value="true" />
+      <created>1744829004921</created>
+      <option name="number" value="00011" />
+      <option name="presentableId" value="LOCAL-00011" />
+      <option name="project" value="LOCAL" />
+      <updated>1744829004921</updated>
+    </task>
+    <task id="LOCAL-00012" summary="Optimized Google files and created single file support for WhisperVIA conversion.">
+      <option name="closed" value="true" />
+      <created>1746002501693</created>
+      <option name="number" value="00012" />
+      <option name="presentableId" value="LOCAL-00012" />
+      <option name="project" value="LOCAL" />
+      <updated>1746002501693</updated>
+    </task>
+    <option name="localTasksCounter" value="13" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
@@ -188,6 +217,8 @@
     <MESSAGE value="Fixed padding error&#10;Modified and added dataplots" />
     <MESSAGE value="Added Training Accuracy&#10;Corrected random_split&#10;- Still need to implement inference scripts" />
     <MESSAGE value="Overhauled Inference / Splitting Procedure" />
-    <option name="LAST_COMMIT_MESSAGE" value="Overhauled Inference / Splitting Procedure" />
+    <MESSAGE value="Implemented GoogleSpeechCommands using most of the code from AudioMNIST." />
+    <MESSAGE value="Optimized Google files and created single file support for WhisperVIA conversion." />
+    <option name="LAST_COMMIT_MESSAGE" value="Optimized Google files and created single file support for WhisperVIA conversion." />
   </component>
 </project>

@@ -361,7 +361,6 @@ def main():
     val_data = SpeakerDataset(val_files, val_labels, transform=transform)
     test_data = SpeakerDataset(test_files, test_labels, transform=transform)
 
-    # 5) Create DataLoaders
     train_loader = DataLoader(train_data, batch_size=batch_size, shuffle=True, collate_fn=collate_fn)
     val_loader = DataLoader(val_data, batch_size=batch_size, shuffle=False, collate_fn=collate_fn)
     test_loader = DataLoader(test_data, batch_size=batch_size, shuffle=False, collate_fn=collate_fn)

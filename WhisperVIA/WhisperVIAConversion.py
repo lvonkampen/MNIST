@@ -16,15 +16,11 @@ def create_new_via_project(tsv_path, output_path):
             "rev_timestamp": "__VIA_PROJECT_REV_TIMESTAMP__",
             "pname": tsv_basename,
             "creator": "WhisperVIA",
-            "created": int(time.time()*1000),
+            "created": int(time.time() * 1000),
             "vid_list": ["1"]
         },
         "config": {
-            "file": {
-                "loc_prefix": {
-                    "1": "", "2": "", "3": "", "4": ""
-                }
-            },
+            "file": {"loc_prefix": {"1": ""}},
             "ui": {
                 "file_content_align": "center",
                 "file_metadata_editor_visible": True,
@@ -37,14 +33,16 @@ def create_new_via_project(tsv_path, output_path):
         "attribute": {
             "1": {
                 "aname": "WhisperVIA",
-                "anchor_id": "FILE1_Z2_XY0", # This is important but I'm not sure why
+                "anchor_id": "FILE1_Z2_XY0",
                 "type": 4,
                 "desc": "Temporal segment attribute added by default",
                 "options": {
-                    "default": "whisper", # Based on this format, I can remove the whisper category
-                    "non-relevant": "non-relevant", # and just insert samples into non-relevant.
-                    "partially-relevant": "partially-relevant",
-                    "relevant": "relevant",
+                    "default": "default",
+                    "Whisper": "Whisper",
+                    "Relevant": "Relevant",
+                    "Irrelevant": "Irrelevant",
+                    "Partially-Relevant": "Partially-Relevant",
+                    "Neutral": "Neutral"
                 },
                 "default_option_id": "default"
             }
@@ -55,14 +53,12 @@ def create_new_via_project(tsv_path, output_path):
                 "fname": new_fname,
                 "type": 4,
                 "loc": 1,
-                "src": "" # Should I use Base64 video or leave empty? Video = Access / NA = Efficient
+                "src": ""
             }
         },
-        "metadata": {}, # <--- This is where data is inserted
+        "metadata": {},
         "view": {
-            "1": {
-                "fid_list": ["1"]
-            }
+            "1": {"fid_list": ["1"]}
         }
     }
 
@@ -98,3 +94,8 @@ if __name__ == '__main__':
     print("Starting WhisperVIA Conversion...")
     create_new_via_project(tsv_path, output_path)
     print("...WhisperVIA Conversion Complete!")
+
+    # Get annotation document rules  from Shardul - Remind the professor when he sends it
+    # See which Whisper model is more accurate (english only -- medium.en) (multilingual -- large)
+    # Try to make a pipeline that maps relevancies to AI model --- identify potential challenges (such as cutting particular sections of the video)
+    # Look at distributions of segments (lengths -- shortest / longest)
