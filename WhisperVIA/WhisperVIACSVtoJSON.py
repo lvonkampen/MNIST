@@ -73,6 +73,8 @@ def convert_csv_to_via_json(csv_path, output_path):
         dtype=str
     )
 
+    read.fillna("", inplace=True)
+
     print(f"\n-- Converting {os.path.basename(csv_path)}: read {len(read)} rows")
 
     count = 0
@@ -124,7 +126,7 @@ def convert_csv_to_via_json(csv_path, output_path):
     print(f"  -> wrote {output_path}")
 
 if __name__ == "__main__":
-    folder = r"C:\Users\GoatF\Downloads\AI_Practice\WhisperVIA\annotations"
+    folder = r"C:\Users\GoatF\Downloads\AI_Practice\WhisperVIA\csv_annotations_lucas"
     for fname in os.listdir(folder):
         if fname.lower().endswith(".csv"):
             in_csv  = os.path.join(folder, fname)

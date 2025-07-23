@@ -4,6 +4,8 @@ import os
 import time
 import uuid
 
+from WhisperVIASummarize import video_to_whisper
+from WhisperVIAConfig import Hyperparameters
 
 def create_new_via_project(csv_path, output_path):
     csv_basename = os.path.splitext(os.path.basename(csv_path))[0]
@@ -37,12 +39,10 @@ def create_new_via_project(csv_path, output_path):
                 "type": 4,
                 "desc": "Temporal segment attribute added by default",
                 "options": {
-                    "default": "default",
-                    "Whisper": "Whisper",
+                    "default": "Whisper",
                     "Relevant": "Relevant",
                     "Irrelevant": "Irrelevant",
                     "Partially-Relevant": "Partially-Relevant",
-                    "Neutral": "Neutral"
                 },
                 "default_option_id": "default"
             }
@@ -67,7 +67,7 @@ def create_new_via_project(csv_path, output_path):
     for ids, row in read.iterrows():
         start_m = row['start']
         end_m = row['end']
-        whisper_id = "default"
+        whisper_id = "Whisper"
 
         start_s = round(start_m / 1000, 3)
         end_s = round(end_m / 1000, 3)
@@ -87,15 +87,29 @@ def create_new_via_project(csv_path, output_path):
     with open(output_path, 'w', encoding='utf-8') as f:
         json.dump(via_project, f, ensure_ascii=False, indent=2)
 
+parent = Hyperparameters.parent_dir
+
+def cleanup(vid_id):
+    os.remove(f"{parent}csv_annotations_lucas/{vid_id}.json")
+    os.remove(f"{parent}csv_annotations_lucas/{vid_id}.srt")
+    os.remove(f"{parent}csv_annotations_lucas/{vid_id}.tsv")
+    os.remove(f"{parent}csv_annotations_lucas/{vid_id}.txt")
+    os.remove(f"{parent}csv_annotations_lucas/{vid_id}.vtt")
+    os.remove(f"{parent}csv_annotations_lucas/{vid_id}.wav")
+
 if __name__ == '__main__':
-    csv_path = '00000_000_001.tsv'
-    output_path = '00000_000_001.json'
+    vid_id = '00026_000_001'
+
+    vid_path = f"C:/Git_Repositories/AccessMath/data/original_videos/lectures/{vid_id}.mp4"
+    wav_path = f"{parent}csv_annotations_lucas/{vid_id}.wav"
+    whisper_out_dir = f"{parent}csv_annotations_lucas/"
+    csv_path = f"{parent}csv_annotations_lucas/{vid_id}.tsv"
+    output_path = f"{parent}csv_annotations_lucas/{vid_id}_annotation.json"
+
+    video_to_whisper(vid_path, wav_path, whisper_out_dir)
 
     print("Starting WhisperVIA Conversion...")
     create_new_via_project(csv_path, output_path)
     print("...WhisperVIA Conversion Complete!")
 
-    # Get annotation document rules  from Shardul - Remind the professor when he sends it
-    # See which Whisper model is more accurate (english only -- medium.en) (multilingual -- large)
-    # Try to make a pipeline that maps relevancies to AI model --- identify potential challenges (such as cutting particular sections of the video)
-    # Look at distributions of segments (lengths -- shortest / longest)
+    cleanup(vid_id)

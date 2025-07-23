@@ -2,7 +2,10 @@ import subprocess
 import torch
 import os
 import pandas as pd
+import ast
 import torchaudio
+
+from moviepy import VideoFileClip, TextClip, CompositeVideoClip, concatenate_videoclips
 
 from WhisperVIAConfig import Hyperparameters
 from WhisperVIAModel import WhisperVIAModel
@@ -11,7 +14,7 @@ def video_to_whisper(vid, wav, out_dir):
     # Extract audio from video using ffmpeg
     print(f"Extracting audio from {vid}")
     subprocess.run([
-        "ffmpeg", "-i", vid, "-ar", "16000", "-ac", "1", "-c:a", "pcm_s16le", wav
+        "ffmpeg", "-i", vid, "-y", "-ar", "16000", "-ac", "1", "-c:a", "pcm_s16le", wav
     ], check=True)
     # Transcribe using Whisper CLI
     print(f"Transcribing audio from {wav}")
@@ -46,65 +49,88 @@ def run_inference(tsv, wav, transform, device, model, sample_rate):
         results.append((start_ms, end_ms, score))
     return results
 
-def concat_segments(segments, max_duration, vid, summary):
+def concat_segments(segments, max_duration, vid, summary, automerge):
+    segments.sort(key=lambda x: x[2], reverse=True)
+
+    # Pick top‑scoring segments up to max_duration
     chosen, total = [], 0.0
     for start_ms, end_ms, score in segments:
         length = end_ms - start_ms
         if total + length > max_duration:
-            break
-        chosen.append((start_ms, end_ms))
+            continue
+        chosen.append((start_ms, end_ms, score))
         total += length
-    total = total / 1000
-    print(f"Picking {len(chosen)} clips : {total:.1f}s total")
+    print(f"Picking {len(chosen)} clips : {total/1000:.1f}s total")
 
-    # create clips
+    # Resort them in temporal order
+    chosen = sorted(chosen, key=lambda x: x[0])
+
+    if automerge:
+        chosen = [list(seg) for seg in chosen]
+        merged = []
+        prev = chosen[0]
+        for curr in chosen[1:]:
+            # if total + length > max_duration:
+            #     continue
+            gap = curr[0] - prev[1]
+            if (gap) <= Hyperparameters.merge_gap * 1000:
+                prev[1] = curr[1]
+                prev[2] = max(prev[2], curr[2])
+            else:
+                length = prev[1] - prev[0]
+                total  += length
+                merged.append(prev)
+                prev    = curr
+        length = prev[1] - prev[0]
+        total  += length
+        merged.append(prev)
+        chosen = merged
+        print(f"Merged to {len(chosen)} clips : {total / 1000:.1f}s total")
+
+
+    # Load the full video once
+    full_video = VideoFileClip(vid)
+
     clips = []
-    for i, (start, end) in enumerate(chosen):
-        fn = f"clip_{i:02d}.mp4"
-        clips.append(fn)
-        subprocess.run([
-            "ffmpeg",
-            "-ss", f"{start / 1000:.2f}", "-to", f"{end / 1000:.2f}",
-            "-i", vid, "-preset", "veryfast", "-crf", "23", # veryfast encodes quickly - more testing
-            "-c:v", "libx264", "-c:a", "aac", fn            # necessary to determine optimal speed
-        ], check=True)
+    for start_ms, end_ms, score in chosen:
+        # Trim by time using `subclipped`
+        clip = full_video.subclipped(start_ms/1000, end_ms/1000)
+        # Create a top‑right TextClip with the confidence score
+        txt = TextClip(text=f"Confidence: {score:.2f}",
+                       font_size=28,
+                       color='white',
+                       bg_color='black',
+                       text_align="center",
+                       horizontal_align="right",
+                       vertical_align="top",
+                       duration=clip.duration)
+        # Composite the text over the video clip
+        comp = CompositeVideoClip([clip, txt])
+        clips.append(comp)
 
-    # concat clips
-    list_txt = "to_concat.txt"
-    with open(list_txt, "w", encoding="utf-8") as f:
-        for clip in clips:
-            f.write(f"file '{clip}'\n")
-
-    subprocess.run([
-        "ffmpeg", "-f", "concat", "-safe", "0", "-i", list_txt,
-        "-preset", "slow", "-crf", "23",
-        "-c:v", "libx264", "-c:a", "aac",
-        summary
-    ], check=True)
-
-    for txt in clips + [list_txt]:
-        os.remove(txt)
+    # Concatenate all annotated clips into one summary
+    final = concatenate_videoclips(clips)
+    final.write_videofile(summary)
 
     print(f"Summary written to {summary}")
 
+parent = Hyperparameters.parent_dir
 
 def cleanup(vid_id):
-    os.remove(f"C:/Users/GoatF/Downloads/AI_Practice/WhisperVIA/WhisperVIASummarization/{vid_id}.json")
-    os.remove(f"C:/Users/GoatF/Downloads/AI_Practice/WhisperVIA/WhisperVIASummarization/{vid_id}.srt")
-    os.remove(f"C:/Users/GoatF/Downloads/AI_Practice/WhisperVIA/WhisperVIASummarization/{vid_id}.tsv")
-    os.remove(f"C:/Users/GoatF/Downloads/AI_Practice/WhisperVIA/WhisperVIASummarization/{vid_id}.txt")
-    os.remove(f"C:/Users/GoatF/Downloads/AI_Practice/WhisperVIA/WhisperVIASummarization/{vid_id}.vtt")
-    os.remove(f"C:/Users/GoatF/Downloads/AI_Practice/WhisperVIA/WhisperVIASummarization/{vid_id}.wav")
+    os.remove(f"{parent}WhisperVIASummarization/{vid_id}.json")
+    os.remove(f"{parent}WhisperVIASummarization/{vid_id}.srt")
+    os.remove(f"{parent}WhisperVIASummarization/{vid_id}.tsv")
+    os.remove(f"{parent}WhisperVIASummarization/{vid_id}.txt")
+    os.remove(f"{parent}WhisperVIASummarization/{vid_id}.vtt")
+    os.remove(f"{parent}WhisperVIASummarization/{vid_id}.wav")
 
-def main():
-    vid_id = "00000_000_002"
-
+def summarize(vid_id):
     vid_path        = f"C:/Git_Repositories/AccessMath/data/original_videos/lectures/{vid_id}.mp4"
-    wav_path        = f"C:/Users/GoatF/Downloads/AI_Practice/WhisperVIA/WhisperVIASummarization/{vid_id}.wav"
-    whisper_out_dir = "C:/Users/GoatF/Downloads/AI_Practice/WhisperVIA/WhisperVIASummarization/"
-    tsv_path        = f"C:/Users/GoatF/Downloads/AI_Practice/WhisperVIA/WhisperVIASummarization/{vid_id}.tsv"
-    model_path      = "C:/Users/GoatF/Downloads/AI_Practice/WhisperVIA/WhisperVIAModel_NEW.pth"
-    summary_path    = f"C:/Users/GoatF/Downloads/AI_Practice/WhisperVIA/WhisperVIASummarization/{vid_id}_summary.mp4"
+    wav_path        = f"{parent}WhisperVIASummarization/{vid_id}.wav"
+    whisper_out_dir = f"{parent}WhisperVIASummarization/"
+    tsv_path        = f"{parent}WhisperVIASummarization/{vid_id}.tsv"
+    model_path      = f"{parent}WhisperVIAModel.pth"
+    summary_path    = f"{parent}WhisperVIASummarization/{vid_id}_summary_automerge.mp4" if Hyperparameters.automerge else f"{parent}WhisperVIASummarization/{vid_id}_summary.mp4"
 
     model = WhisperVIAModel(Hyperparameters.activation, Hyperparameters.hidden_feat, Hyperparameters.in_feat,
                             Hyperparameters.out_feat, Hyperparameters.conv_channels)
@@ -116,24 +142,81 @@ def main():
     video_to_whisper(vid_path, wav_path, whisper_out_dir)
 
     segments = run_inference(tsv_path, wav_path, Hyperparameters.transform, Hyperparameters.device, model, Hyperparameters.sample_rate)
-    segments = sorted(segments, key=lambda x: x[2], reverse=True)
 
-    concat_segments(segments, Hyperparameters.max_duration * 1000, vid_path, summary_path)
+    concat_segments(segments, Hyperparameters.max_duration * 1000, vid_path, summary_path, Hyperparameters.automerge)
 
     cleanup(vid_id)
+
+
+def parse_via_annotations(path, label_map):
+    df = pd.read_csv(path, comment='#', header=None,
+                     names=["id", "file_list", "flags", "temporal_coordinates", "spatial_coordinates", "metadata"])
+
+    # Clean columns
+    df["temporal_coordinates"] = df["temporal_coordinates"].apply(ast.literal_eval)
+    df["metadata"] = df["metadata"].apply(ast.literal_eval)
+
+    # Extract label and score
+    def extract_label(meta):
+        label = meta.get("1", None)  # "1" is the attribute ID from the header
+        return label.lower() if label else None
+
+    df["label"] = df["metadata"].apply(extract_label)
+    df = df[df["label"].isin(label_map)]  # filter out Whisper or unknowns
+
+    # Convert to (start_ms, end_ms, score)
+    segments = []
+    for _, row in df.iterrows():
+        coords = row["temporal_coordinates"]
+        if len(coords) == 2:
+            start_ms = int(coords[0] * 1000)
+            end_ms = int(coords[1] * 1000)
+            score = label_map[row["label"]]
+            segments.append((start_ms, end_ms, score))
+
+    return segments
+
+def sum_ground_truth(vid_id):
+    parent = Hyperparameters.parent_dir
+
+    vid_path        = f"C:/Git_Repositories/AccessMath/data/original_videos/lectures/{vid_id}.mp4"
+    ann_path        = f"{parent}csv_annotations_shardul/{vid_id}_annotation.csv" # some annotations are called _annotation while others are _annotations !
+    summary_path    = f"{parent}WhisperVIASummarization/{vid_id}_ground_truth.mp4"
+
+    segments = parse_via_annotations(ann_path, Hyperparameters.label_map)
+
+    concat_segments(segments, Hyperparameters.max_duration * 1000, vid_path, summary_path, False)
+
+    cleanup(vid_id)
+
+
+def main():
+    vid_id = "00000_000_001"
+    summarize(vid_id)
+
+    # sum_ground_truth("00000_000_001")
 
 if __name__ == "__main__":
     main()
 
-# summarize using inference -- take video, hyperparameters, and segments and output a new
-# lecture video with 5 minutes worth of the most relevant segments (in descending order)
 
-# make a parent path - make a Hyperparameters path
-# make it possible to give transcript from outside source (csv or json files)
-# instead of breaking / you should just skip segments
-# observe distance of phrases on the video for better summary
-# ####  resort the chosen clips before concatenating - sort by start_ms
-# ####  make it possible to run summary on ground truth the same way
-# you may not need to re-encode audio - see if you can find ways to auto-encode
-# look into adding overlay of video (probability of relevance) in Python without much extra processing - OpenCV: last resort
-# MUST implement inference (recall / F1 / )
+# ✔️ #### compare ground truth video to inference video for qualitative analysis
+# research how to avoid repetition in summaries
+# - - could determine distance from last summary / determine if spoken information is repetitive / might be easier using image analysis as well
+# examine where errors are located within audio segments
+# #### make it so you can use combinations of mine and Shardul's annotations to improve relevance -- will do once more annotations created
+# - this should use different annotations but use the same model taking the averages
+# ✔️✔️ #### OPTIONAL: Once segments are collected, check the gap between continuous segments to relevant enough to be merged - make it enablable (automerge:yes/no)
+# ✔️  CREATE MORE ANNOTATIONS - The ones already worked on
+
+# should ground_truth use automerge? SURE
+# is my change to the scoring order good?
+# Would it be useful to differentiate between an example and basic teaching in the annotation tool?
+# - - This may help to reduce the amount of repetition found in summaries and improve the clarity of lecture information
+
+# find average gap sizes - make a histogram
+# seperate parts of the script to add modularity
+# make a script that will combine mine and Shardul's annotations before entering training - make it so it is possible to obtain more than 2 different annotations
+# whisper output file + input  files + final annotated file with averaged  : use sys_arg for this
+# change annotations and find what you think is relevant and not personally
+# research how to use command line in debugging mode

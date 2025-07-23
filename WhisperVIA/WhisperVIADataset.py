@@ -10,11 +10,7 @@ from torch.utils.data import Dataset
 from WhisperVIAConfig import Hyperparameters
 
 class CustomWhisperVIADataset(Dataset):
-    LABEL_MAP = {
-        "irrelevant": 0,
-        "partially-relevant": 0.5,
-        "relevant": 1
-    }
+    label_map = Hyperparameters.label_map
 
     TIME_RE = re.compile(r"[0-9]+\.?[0-9]*")
 
@@ -94,7 +90,7 @@ class CustomWhisperVIADataset(Dataset):
                 except Exception:
                     raise Exception("Typo found within file: " + label_str)
                 if label_str == "whisper": continue
-                label = self.LABEL_MAP.get(label_str, 0)
+                label = self.label_map.get(label_str, 0)
 
                 self.segments.append((wav_p, start_s, end_s, label))
 

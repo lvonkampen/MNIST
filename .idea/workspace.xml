@@ -4,12 +4,14 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="f68265ec-7205-435a-9d6b-6d0aa938573f" name="Changes" comment="Created WhisperVIA configuration">
+    <list default="true" id="f68265ec-7205-435a-9d6b-6d0aa938573f" name="Changes" comment="Improved WhisperVIA">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/WhisperVIA/WhisperVIACSVtoJSON.py" beforeDir="false" afterPath="$PROJECT_DIR$/WhisperVIA/WhisperVIACSVtoJSON.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/WhisperVIA/WhisperVIAConfig.py" beforeDir="false" afterPath="$PROJECT_DIR$/WhisperVIA/WhisperVIAConfig.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/WhisperVIA/WhisperVIAConversion.py" beforeDir="false" afterPath="$PROJECT_DIR$/WhisperVIA/WhisperVIAConversion.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/WhisperVIA/WhisperVIAInference.py" beforeDir="false" afterPath="$PROJECT_DIR$/WhisperVIA/WhisperVIAInference.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/WhisperVIA/WhisperVIADataset.py" beforeDir="false" afterPath="$PROJECT_DIR$/WhisperVIA/WhisperVIADataset.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/WhisperVIA/WhisperVIAMain.py" beforeDir="false" afterPath="$PROJECT_DIR$/WhisperVIA/WhisperVIAMain.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/WhisperVIA/WhisperVIAModel.py" beforeDir="false" afterPath="$PROJECT_DIR$/WhisperVIA/WhisperVIAModel.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/WhisperVIA/WhisperVIASummarize.py" beforeDir="false" afterPath="$PROJECT_DIR$/WhisperVIA/WhisperVIASummarize.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -54,35 +56,36 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;Python.12-03-24_DatasetPractice.executor&quot;: &quot;Run&quot;,
-    &quot;Python.12-04-24_MNISTPractice.executor&quot;: &quot;Run&quot;,
-    &quot;Python.12-11-24_MNISTMain.executor&quot;: &quot;Run&quot;,
-    &quot;Python.12-11-24_MNISTModel.executor&quot;: &quot;Run&quot;,
-    &quot;Python.AudioMNISTInference.executor&quot;: &quot;Run&quot;,
-    &quot;Python.AudioMNISTMain.executor&quot;: &quot;Run&quot;,
-    &quot;Python.AudioMNISTModel.executor&quot;: &quot;Run&quot;,
-    &quot;Python.ConvMNISTMain.executor&quot;: &quot;Run&quot;,
-    &quot;Python.ConvMNISTModel.executor&quot;: &quot;Run&quot;,
-    &quot;Python.GoogleMain.executor&quot;: &quot;Run&quot;,
-    &quot;Python.GoogleModel.executor&quot;: &quot;Run&quot;,
-    &quot;Python.MNISTMain.executor&quot;: &quot;Run&quot;,
-    &quot;Python.MNISTModel.executor&quot;: &quot;Run&quot;,
-    &quot;Python.WhisperVIACSVtoJSON.executor&quot;: &quot;Run&quot;,
-    &quot;Python.WhisperVIAConfig.executor&quot;: &quot;Run&quot;,
-    &quot;Python.WhisperVIAConversion.executor&quot;: &quot;Run&quot;,
-    &quot;Python.WhisperVIADataset.executor&quot;: &quot;Run&quot;,
-    &quot;Python.WhisperVIAInference.executor&quot;: &quot;Run&quot;,
-    &quot;Python.WhisperVIAMain.executor&quot;: &quot;Run&quot;,
-    &quot;Python.WhisperVIAModel.executor&quot;: &quot;Run&quot;,
-    &quot;Python.WhisperVIASummarize.executor&quot;: &quot;Run&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
-    &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
-    &quot;last_opened_file_path&quot;: &quot;C:/Users/GoatF/Downloads/AI_Practice&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "Python.12-03-24_DatasetPractice.executor": "Run",
+    "Python.12-04-24_MNISTPractice.executor": "Run",
+    "Python.12-11-24_MNISTMain.executor": "Run",
+    "Python.12-11-24_MNISTModel.executor": "Run",
+    "Python.AudioMNISTInference.executor": "Run",
+    "Python.AudioMNISTMain.executor": "Run",
+    "Python.AudioMNISTModel.executor": "Run",
+    "Python.ConvMNISTMain.executor": "Run",
+    "Python.ConvMNISTModel.executor": "Run",
+    "Python.GoogleMain.executor": "Run",
+    "Python.GoogleModel.executor": "Run",
+    "Python.MNISTMain.executor": "Run",
+    "Python.MNISTModel.executor": "Run",
+    "Python.WhisperVIACSVtoJSON.executor": "Run",
+    "Python.WhisperVIAConfig.executor": "Run",
+    "Python.WhisperVIAConversion.executor": "Run",
+    "Python.WhisperVIADataset.executor": "Run",
+    "Python.WhisperVIAInference.executor": "Run",
+    "Python.WhisperVIAMain.executor": "Debug",
+    "Python.WhisperVIAModel.executor": "Run",
+    "Python.WhisperVIASummarize.executor": "Run",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "git-widget-placeholder": "main",
+    "ignore.virus.scanning.warn.message": "true",
+    "last_opened_file_path": "C:/Users/GoatF/Downloads/AI_Practice",
+    "settings.editor.selected.configurable": "preferences.lookFeel"
   }
-}</component>
+}]]></component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
       <recent name="C:\Users\GoatF\Downloads\AI_Practice\WhisperVIA" />
@@ -211,7 +214,15 @@
       <option name="project" value="LOCAL" />
       <updated>1750816976665</updated>
     </task>
-    <option name="localTasksCounter" value="14" />
+    <task id="LOCAL-00014" summary="Improved WhisperVIA">
+      <option name="closed" value="true" />
+      <created>1750893141300</created>
+      <option name="number" value="00014" />
+      <option name="presentableId" value="LOCAL-00014" />
+      <option name="project" value="LOCAL" />
+      <updated>1750893141300</updated>
+    </task>
+    <option name="localTasksCounter" value="15" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
@@ -225,6 +236,18 @@
     <MESSAGE value="Implemented GoogleSpeechCommands using most of the code from AudioMNIST." />
     <MESSAGE value="Optimized Google files and created single file support for WhisperVIA conversion." />
     <MESSAGE value="Created WhisperVIA configuration" />
-    <option name="LAST_COMMIT_MESSAGE" value="Created WhisperVIA configuration" />
+    <MESSAGE value="Improved WhisperVIA" />
+    <option name="LAST_COMMIT_MESSAGE" value="Improved WhisperVIA" />
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/WhisperVIA/WhisperVIASummarize.py</url>
+          <line>67</line>
+          <option name="timeStamp" value="2" />
+        </line-breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
   </component>
 </project>

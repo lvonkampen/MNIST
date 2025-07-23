@@ -43,7 +43,7 @@ class WhisperVIAModel(nn.Module):
             layers += [nn.Linear(prev, h), nn.BatchNorm1d(h), activation]
             prev = h
         self.fc = nn.Sequential(*layers)
-        self.out = nn.Linear(prev, num_classes)
+        self.out = nn.Linear(prev, num_classes) # There is no Sigmoid activation at the very end that stops values from going beyond 1.0 ?
 
         self._init_weights()
 
