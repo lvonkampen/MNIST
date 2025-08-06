@@ -4,8 +4,8 @@ import os
 import time
 import uuid
 
-from WhisperVIASummarize import video_to_whisper
-from WhisperVIAConfig import Hyperparameters
+from Summarize import video_to_whisper
+from Config import Hyperparameters
 
 def create_new_via_project(csv_path, output_path):
     csv_basename = os.path.splitext(os.path.basename(csv_path))[0]

@@ -12,9 +12,9 @@ import json
 import random
 from sklearn.metrics import precision_score, recall_score, f1_score
 
-from WhisperVIA.WhisperVIADataset import CustomWhisperVIADataset
-from WhisperVIAModel import WhisperVIAModel
-from WhisperVIAConfig import Hyperparameters
+from WhisperVIA.Dataset import CustomWhisperVIADataset
+from Model import WhisperVIAModel
+from Config import Hyperparameters
 
 def collate_fn(batch):
     xs, ys = zip(*batch)
@@ -236,53 +236,6 @@ def training(model, train_loader, val_loader, loss_func, initial_learning_rate, 
 
     return train_losses, val_losses
 
-def plot_loss_progression(train_losses, val_losses):
-    plt.figure(figsize=(10, 5))
-    plt.plot(train_losses, label='Training Loss')
-    plt.plot(val_losses, label='Validation Loss')
-    plt.xlabel("Epochs")
-    plt.ylabel("Loss")
-    plt.title("Training and Validation Loss Progression")
-    plt.legend()
-    plt.show()
-
-def display(processor):
-    print("\n--- Summary of Processed Files ---")
-    print("Normalized Shapes:", processor.t_shape)
-    print("Min Normalized Values:", processor.t_min)
-    print("Max Normalized Values:", processor.t_max)
-    print("Normalized Means:", processor.t_mean)
-    print("Standard Deviation:", processor.t_std)
-
-    print("\n--- Final Summary ---")
-    print("Minimum Shape:", min(processor.t_shape))
-    print("Maximum Shape:", max(processor.t_shape))
-    print("Minimum Normalized Value:", min(processor.t_min))
-    print("Mean Min Normalized Value:", sum(processor.t_min) / len(processor.t_min))
-    print("Maximum Min Normalized Value:", max(processor.t_min))
-    print("Minimum Max Normalized Value:", min(processor.t_max))
-    print("Mean Max Normalized Value:", sum(processor.t_max) / len(processor.t_max))
-    print("Maximum Normalized Value:", max(processor.t_max))
-    print("Minimum Normalized Mean Value:", min(processor.t_mean))
-    print("Mean Normalized Mean Value:", sum(processor.t_mean) / len(processor.t_mean))
-    print("Maximum Normalized Mean Value:", max(processor.t_mean))
-
-    print("Sample Count >8000:", processor.count_above_8k)
-    print("Total Files Processed:", processor.total_files)
-
-    # for file in processor.files_above_8k:
-    #     print("Filename >8000:", file)
-
-    lengths = [shape_tuple[0] for shape_tuple in processor.t_shape]
-
-    plt.figure(figsize=(8, 4))
-    plt.hist(lengths, bins=10, edgecolor='black')
-    plt.title("Histogram of Audio Sizes")
-    plt.xlabel("Number of Samples")
-    plt.ylabel("Frequency")
-    plt.tight_layout()
-    plt.show()
-
 
 class AudioProcessor:
     def __init__(self):
@@ -338,6 +291,54 @@ class AudioProcessor:
             self.t_std.append(std_val)
 
 
+def plot_loss_progression(train_losses, val_losses):
+    plt.figure(figsize=(10, 5))
+    plt.plot(train_losses, label='Training Loss')
+    plt.plot(val_losses, label='Validation Loss')
+    plt.xlabel("Epochs")
+    plt.ylabel("Loss")
+    plt.title("Training and Validation Loss Progression")
+    plt.legend()
+    plt.show()
+
+def display(processor):
+    print("\n--- Summary of Processed Files ---")
+    print("Normalized Shapes:", processor.t_shape)
+    print("Min Normalized Values:", processor.t_min)
+    print("Max Normalized Values:", processor.t_max)
+    print("Normalized Means:", processor.t_mean)
+    print("Standard Deviation:", processor.t_std)
+
+    print("\n--- Final Summary ---")
+    print("Minimum Shape:", min(processor.t_shape))
+    print("Maximum Shape:", max(processor.t_shape))
+    print("Minimum Normalized Value:", min(processor.t_min))
+    print("Mean Min Normalized Value:", sum(processor.t_min) / len(processor.t_min))
+    print("Maximum Min Normalized Value:", max(processor.t_min))
+    print("Minimum Max Normalized Value:", min(processor.t_max))
+    print("Mean Max Normalized Value:", sum(processor.t_max) / len(processor.t_max))
+    print("Maximum Normalized Value:", max(processor.t_max))
+    print("Minimum Normalized Mean Value:", min(processor.t_mean))
+    print("Mean Normalized Mean Value:", sum(processor.t_mean) / len(processor.t_mean))
+    print("Maximum Normalized Mean Value:", max(processor.t_mean))
+
+    print("Sample Count >8000:", processor.count_above_8k)
+    print("Total Files Processed:", processor.total_files)
+
+    # for file in processor.files_above_8k:
+    #     print("Filename >8000:", file)
+
+    lengths = [shape_tuple[0] for shape_tuple in processor.t_shape]
+
+    plt.figure(figsize=(8, 4))
+    plt.hist(lengths, bins=10, edgecolor='black')
+    plt.title("Histogram of Audio Sizes")
+    plt.xlabel("Number of Samples")
+    plt.ylabel("Frequency")
+    plt.tight_layout()
+    plt.show()
+
+
 def main():
 
     train_sp, val_sp, test_sp = split_speakers(
@@ -382,10 +383,6 @@ def main():
 if __name__ == "__main__":
     main()
 
-# ✔️ make sure split_speakers stores the randomized speakers for future uses of the data
 
 # start error analysis - find where the error is the largest to mitigate the problem potentially
-# ✔️ try adding sigmoid as the activation instead - Sigmoid uses 0.0 - 1.0 while ReLU uses anything
-# ✔️ make sure to implement recall / F1 /
-# ✔️ summarize using inference -- take video, hyperparameters, and segments and output a new lecture video with 5 minutes worth of the most relevant segments (in descending order)
 # turn Config into a .txt or a .json file

@@ -27,10 +27,9 @@ class Hyperparameters:
 
     max_examples = 5
 
-    max_duration = 300.0
+    max_duration = 300.0    # seconds
 
     automerge = True
-    merge_gap = 1
 
     script_dir = os.path.dirname(os.path.abspath(__file__))
     audio_dir = os.path.join(script_dir, "raudio")
@@ -42,5 +41,7 @@ class Hyperparameters:
         "partially-relevant":0.5,
         "irrelevant":0.0
     }
+
+    iou_threshold = 0.50
 
 # should be a json file so that it is easier to modify

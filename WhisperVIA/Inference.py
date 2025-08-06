@@ -8,9 +8,9 @@ import pandas as pd
 import torch
 import torchaudio
 
-from WhisperVIAModel import WhisperVIAModel
-from WhisperVIAConfig import Hyperparameters
-from WhisperVIAMain import testing_examples, split_speakers, CustomWhisperVIADataset, collate_fn, DataLoader
+from Model import WhisperVIAModel
+from Config import Hyperparameters
+from Main import testing_examples, split_speakers, CustomWhisperVIADataset, collate_fn, DataLoader
 
 model = WhisperVIAModel(Hyperparameters.activation, Hyperparameters.hidden_feat, Hyperparameters.in_feat,
                         Hyperparameters.out_feat, Hyperparameters.conv_channels)

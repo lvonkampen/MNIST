@@ -7,7 +7,7 @@ import pandas as pd
 import torchaudio
 from torch.utils.data import Dataset
 
-from WhisperVIAConfig import Hyperparameters
+from Config import Hyperparameters
 
 class CustomWhisperVIADataset(Dataset):
     label_map = Hyperparameters.label_map

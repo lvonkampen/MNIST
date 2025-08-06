@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.init as init
 
-from WhisperVIAConfig import Hyperparameters
+from Config import Hyperparameters
 
 
 class ConvBlock(nn.Module):

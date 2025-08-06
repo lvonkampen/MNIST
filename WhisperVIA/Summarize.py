@@ -4,11 +4,12 @@ import os
 import pandas as pd
 import ast
 import torchaudio
+import matplotlib.pyplot as plt
 
 from moviepy import VideoFileClip, TextClip, CompositeVideoClip, concatenate_videoclips
 
-from WhisperVIAConfig import Hyperparameters
-from WhisperVIAModel import WhisperVIAModel
+from Config import Hyperparameters
+from Model import WhisperVIAModel
 
 def video_to_whisper(vid, wav, out_dir):
     # Extract audio from video using ffmpeg
@@ -140,12 +141,9 @@ def summarize(vid_id):
     model.to(Hyperparameters.device).eval()
 
     video_to_whisper(vid_path, wav_path, whisper_out_dir)
-
-    segments = run_inference(tsv_path, wav_path, Hyperparameters.transform, Hyperparameters.device, model, Hyperparameters.sample_rate)
-
-    concat_segments(segments, Hyperparameters.max_duration * 1000, vid_path, summary_path, Hyperparameters.automerge)
-
-    cleanup(vid_id)
+    #segments = run_inference(tsv_path, wav_path, Hyperparameters.transform, Hyperparameters.device, model, Hyperparameters.sample_rate)
+    #concat_segments(segments, Hyperparameters.max_duration * 1000, vid_path, summary_path, Hyperparameters.automerge)
+    #cleanup(vid_id)
 
 
 def parse_via_annotations(path, label_map):
@@ -173,12 +171,9 @@ def parse_via_annotations(path, label_map):
             end_ms = int(coords[1] * 1000)
             score = label_map[row["label"]]
             segments.append((start_ms, end_ms, score))
-
     return segments
 
 def sum_ground_truth(vid_id):
-    parent = Hyperparameters.parent_dir
-
     vid_path        = f"C:/Git_Repositories/AccessMath/data/original_videos/lectures/{vid_id}.mp4"
     ann_path        = f"{parent}csv_annotations_shardul/{vid_id}_annotation.csv" # some annotations are called _annotation while others are _annotations !
     summary_path    = f"{parent}WhisperVIASummarization/{vid_id}_ground_truth.mp4"
@@ -189,34 +184,36 @@ def sum_ground_truth(vid_id):
 
     cleanup(vid_id)
 
+def make_histogram(vid_id):
+    # segments must be sorted by start time
+    ann_path = f"{parent}csv_annotations_shardul/{vid_id}_annotation_shardul.csv"
+
+    segments = parse_via_annotations(ann_path, Hyperparameters.label_map)
+
+    segs = sorted(segments, key=lambda x: x[0])
+    gaps = []
+    for (s1,e1,_), (s2,_,_) in zip(segs, segs[1:]):
+        gaps.append((s2 - e1)/1000.0)  # in seconds
+
+    plt.figure()
+    plt.hist(gaps, bins=30)      # no color specs!
+    plt.xlabel("Gap duration (s)")
+    plt.ylabel("Count")
+    plt.title("Histogram of Inter‐segment Gaps")
+    plt.show()
 
 def main():
-    vid_id = "00000_000_001"
+    vid_id = "00026_000_001"
     summarize(vid_id)
-
-    # sum_ground_truth("00000_000_001")
+    # sum_ground_truth(vid_id)
+    #make_histogram(vid_id)
 
 if __name__ == "__main__":
     main()
 
 
-# ✔️ #### compare ground truth video to inference video for qualitative analysis
-# research how to avoid repetition in summaries
-# - - could determine distance from last summary / determine if spoken information is repetitive / might be easier using image analysis as well
-# examine where errors are located within audio segments
-# #### make it so you can use combinations of mine and Shardul's annotations to improve relevance -- will do once more annotations created
-# - this should use different annotations but use the same model taking the averages
-# ✔️✔️ #### OPTIONAL: Once segments are collected, check the gap between continuous segments to relevant enough to be merged - make it enablable (automerge:yes/no)
-# ✔️  CREATE MORE ANNOTATIONS - The ones already worked on
-
-# should ground_truth use automerge? SURE
-# is my change to the scoring order good?
-# Would it be useful to differentiate between an example and basic teaching in the annotation tool?
-# - - This may help to reduce the amount of repetition found in summaries and improve the clarity of lecture information
-
-# find average gap sizes - make a histogram
 # seperate parts of the script to add modularity
-# make a script that will combine mine and Shardul's annotations before entering training - make it so it is possible to obtain more than 2 different annotations
-# whisper output file + input  files + final annotated file with averaged  : use sys_arg for this
-# change annotations and find what you think is relevant and not personally
-# research how to use command line in debugging mode
+# research how to use command line in debugging mode : Run - Edit configurations - > apply configuration <
+
+# see how to transition audios by overlaying
+# change relevance annotations - think of reducing the video by 10x
