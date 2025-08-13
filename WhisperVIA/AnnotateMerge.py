@@ -1,8 +1,10 @@
 import sys
 import os
 import ast
+
 import pandas as pd
 import logging
+
 
 from Config import Hyperparameters
 
@@ -13,8 +15,8 @@ def parse_via_csv(path):
         names=["id","file_list","flags","temporal_coordinates","spatial_coordinates","metadata"],
         dtype=str, skip_blank_lines=True
     )
-    segs = []
-    for _, row in df.iterrows():
+    segs = {}
+    for sidx, (_, row) in enumerate(df.iterrows()):
         coords = ast.literal_eval(row["temporal_coordinates"])
         if len(coords) < 2:
             continue
@@ -22,7 +24,7 @@ def parse_via_csv(path):
         e = int(coords[1] * 1000)
         meta = ast.literal_eval(row["metadata"])
         label = meta.get("1", "").lower()
-        segs.append({'start': s, 'end': e, 'label': label})
+        segs[sidx] = {'start': s, 'end': e, 'label': label}
     return segs
 
 def parse_default_segments(tsv_path):
@@ -33,45 +35,94 @@ def iou(a, b):
     sa, ea = a['start'], a['end']
     sb, eb = b['start'], b['end']
     inter = max(0, min(ea, eb) - max(sa, sb))
-    union = max(ea, eb) - min(sa, sb)
-    return inter/union if union > 0 else 0
+    len_a = max(0, ea - sa)
+    len_b = max(0, eb - sb)
+    union = len_a + len_b - inter
+    return inter / union if union > 0 else 0.0
 
-def time_align(annots, default_segs, iou_thres):
-    # merge annotations that map to the same whisper segment
-    merged = {}
+def time_align(annots, default_segs, upper_iou_thres, lower_iou_thres, logger):
+    # align annotations that map to whisper segment
+    aligned = {}
     for path, segs in annots.items():
         key = os.path.basename(path)
-        merged[key] = {}
-        for idx, dseg in enumerate(default_segs, 1):
-            # checks every segment if their iou matches this dseg
-            overlaps = [s for s in segs if iou(s, dseg) >= iou_thres]
-            if not overlaps:
-                continue
-            # force time to the default segment
-            start = dseg['start']
-            end = dseg['end']
-            # collect all overlapping labels
-            labels = {o['label'] for o in overlaps}
-            merged[key][idx] = {'start': start, 'end': end, 'labels': labels}
-    return merged
+        aligned[key] = {}
+        paired_d = set()
+        paired_s = set()
+        overlaps = []
 
-def relevance_align(merged):
-    # compute agreed relevance from single / multiple annotators : labels 'CONFLICT' if default segment has conflicting scorings
+        for didx, dseg in enumerate(default_segs):
+            # checks every segment if their iou matches this dseg
+            for sidx, s in segs.items():
+                iovu = iou(s, dseg)
+                if iovu > 0:
+                    overlaps.append([{f'd{didx}': dseg}, {f's{sidx}': s}, iovu])
+
+        overlaps = sorted(overlaps, key=lambda x: x[2], reverse=True)
+
+        # synced annotations
+        for d, s, iovu in overlaps:
+            d_key = list(d.keys())[0]
+            s_key = list(s.keys())[0]
+            didx = int(d_key[1:])
+            sidx = int(s_key[1:])
+            if didx not in paired_d and sidx not in paired_s:
+                if iovu >= upper_iou_thres:
+                    paired_d.add(didx)
+                    paired_s.add(sidx)
+                    aligned[key][didx] = {
+                        'start': d[d_key]['start'],
+                        'end': d[d_key]['end'],
+                        'label': s[s_key]['label']
+                    }
+
+        # partially-desynced annotations
+        for d, s, iovu in overlaps:
+            d_key = list(d.keys())[0]
+            s_key = list(s.keys())[0]
+            didx = int(d_key[1:])
+            sidx = int(s_key[1:])
+            if didx not in paired_d and sidx not in paired_s:
+                if iovu >= lower_iou_thres:
+                    paired_d.add(didx)
+                    paired_s.add(sidx)
+                    aligned[key][didx] = {
+                        'start': d[d_key]['start'],
+                        'end': d[d_key]['end'],
+                        'label': s[s_key]['label']
+                    }
+                    message = f"[W] {os.path.basename(path)}: seg #{sidx}: [{s[s_key]['start'] / 1000:.3f},{s[s_key]['end'] / 1000:.3f}] has lower IoU = {iovu:.2f} < {lower_iou_thres:.2f}"
+                    print(message)
+                    logger.warning(message)
+
+        # desynced annotations
+        for didx, dseg in enumerate(default_segs):
+            if didx not in paired_d:
+                message = f"[E] {os.path.basename(path)}: d_seg #{didx}: [{dseg['start'] / 1000:.3f},{dseg['end'] / 1000:.3f}] has no matching seg"
+                print(message)
+                logger.error(message)
+
+        for sidx, s in segs.items():
+            if sidx not in paired_s:
+                message = f"[E] {os.path.basename(path)}: seg #{sidx}: [{s['start'] / 1000:.3f},{s['end'] / 1000:.3f}] has no matching d_seg"
+                print(message)
+                logger.error(message)
+    return aligned
+
+def relevance_align(aligned):
+    # compute agreed relevance from multiple annotators : labels 'CONFLICT' if default segment has conflicting scorings
     consensus = {}
 
-    # collect all segment idx
-    idxs = set().union(*(ann.keys() for ann in merged.values()))
+    # collect all default_segs across annotators
+    idxs = set().union(*(ann.keys() for ann in aligned.values()))
 
     for idx in sorted(idxs):
-        # provides the first annotation with this idx
-        example = next(ann[idx] for ann in merged.values() if idx in ann)
+        # find an example entry to get start and end
+        example = next(ann[idx] for ann in aligned.values() if idx in ann)
         start, end = example['start'], example['end']
 
-        # collect all segment labels
-        labels = set().union(*(ann[idx]['labels'] for ann in merged.values() if idx in ann))
+        # collect all segment labels for specific default_seg
+        labels = set(ann[idx]['label'] for ann in aligned.values() if idx in ann)
         # merges the set of labels spit from time_align to a single label
-        for ann in merged.values():
-            labels.update(ann.get(idx, {}).get('labels', set()))
         if 'relevant' in labels and 'irrelevant' in labels:
             label = 'conflict'
         elif 'partially-relevant' in labels:
@@ -82,112 +133,83 @@ def relevance_align(merged):
             label = 'irrelevant'
         else:
             label = 'unknown'
-
         consensus[idx] = {'start': start, 'end': end, 'label': label}
 
-    return consensus
+    return aligned, consensus
 
 def iou_checker(annots, default_segs, iou_threshold, logger):
     # IoU errors: each annotated segment must overlap some default by ≥ threshold
-    for p, segs in annots.items():
-        for seg in segs:
+    message = " - - - Determining IoU errors... - - - "
+    print(message)
+    logger.info(message)
+
+    for path, segs in annots.items():
+        for seg in (segs.values() if isinstance(segs, dict) else segs):
             # checks max iou and compares to that
             max_i = max(iou(seg, dseg) for dseg in default_segs)
             if max_i < iou_threshold:
                 s, e, label = seg['start'], seg['end'], seg['label']
-                print(
-                    f"[ERROR] {os.path.basename(p)}: "
-                    f"segment [{s / 1000:.3f},{e / 1000:.3f}]s "
-                    f"label={label!r} has max IoU={max_i:.2f} < {iou_threshold:.2f}"
-                )
-                logger.error(
-                    f"{os.path.basename(p)}: "
-                    f"segment [{s / 1000:.3f},{e / 1000:.3f}]s "
-                    f"label={label!r} has max IoU={max_i:.2f} < {iou_threshold:.2f}"
-                )
+                message = f"[E] {os.path.basename(path)}: seg [{s / 1000:.3f},{e / 1000:.3f}]s label={label!r} has max IoU={max_i:.2f} < {iou_threshold:.2f}"
+                print(message)
+                logger.error(message)
 
-def disagreement_checker(annots, default_segs, iou_threshold, logger, con='conflict', rel='relevant', irr='irrelevant'):
+def disagreement_checker(annots, default_segs, logger, rel='relevant', irr='irrelevant', con='conflict', unk='unknown'):
     # Disagreement errors: for each default segment, if one annotator says “relevant” and another “irrelevant”, warn.
-    for idx, dseg in enumerate(default_segs, start=1):
+    message = " - - - Determining disagreement errors... - - - "
+    print(message)
+    logger.info(message)
+
+    for didx, dseg in enumerate(default_segs):
         labels = set()
-        for segs in annots.values():
-            for seg in segs:
-                if iou(seg, dseg) >= iou_threshold:
-                    labels.add(seg['label'])
+        for ann in annots.values():
+            entry = ann.get(didx)
+            if entry:
+                labels.add(entry.get('label'))
         # checks label relevance
-        if rel in labels and irr in labels:
-            start, end = dseg['start'], dseg['end']
-            print(
-                f"[WARN] Default segment #{idx} "
-                f"[{start / 1000:.3f},{end / 1000:.3f}]s: conflicting labels {labels}"
-            )
-            logger.warning(
-                f"Default segment #{idx} "
-                f"[{start / 1000:.3f},{end / 1000:.3f}]s: conflicting labels {labels}"
-            )
+            if (rel in labels and irr in labels) or (con in labels) or (unk in labels):
+                start, end = dseg['start'], dseg['end']
+                message = f"[W] Dseg #{didx} [{start / 1000:.3f},{end / 1000:.3f}]s: conflicting labels {labels}"
+                print(message)
+                logger.warning(message)
 
-def consensus_iou_checker(consensus, default_segs, iou_threshold, logger):
-    # ensure consensus still overlaps some default segment ≥ threshold.
-    for idx, seg in consensus.items():
-        max_i = max(iou(seg, dseg) for dseg in default_segs)
-        if max_i < iou_threshold:
-            s, e = seg['start'], seg['end']
-            print(
-                f"[ERROR] Consensus segment #{idx} "
-                f"[{s / 1000:.3f},{e / 1000:.3f}]s IoU={max_i:.2f} < {iou_threshold:.2f}"
-            )
-            logger.error(
-                f"Consensus segment #{idx} "
-                f"[{s/1000:.3f},{e/1000:.3f}]s IoU={max_i:.2f} < {iou_threshold:.2f}"
-            )
-
-def consensus_disagreement_checker(consensus, logger):
-    # warns on any consensus label that indicates a conflict
-    for idx, seg in consensus.items():
-        if seg['label'] == 'conflict' or seg['label'] == 'unknown':
-            start, end = seg['start'], seg['end']
-            print(
-                f"[WARN] Consensus segment #{idx} "
-                f"[{start/1000:.3f},{end/1000:.3f}]s labeled CONFLICT or UNKNOWN"
-            )
-            logger.warning(
-                f"Consensus segment #{idx} "
-                f"[{start/1000:.3f},{end/1000:.3f}]s labeled CONFLICT or UNKNOWN"
-            )
-
-def check_annotations(default_segs, iou_threshold, annot_paths, logger):
-    # group the provided CSV paths by video ID prefix
-    videos = {}
+def check_annotations(default_segs, uit, lit, annot_paths, logger):
     for p in annot_paths:
         if not p.lower().endswith(".csv"):
-            print(f"[WARN] Skipping non-CSV path {p!r}")
-            logger.warning(f"Skipping non-CSV path {p!r}")
+            message = f"[W] Skipping non-CSV path {p!r}"
+            print(message)
+            logger.warning(message)
             continue
-        basename = os.path.basename(p)
-        vid = basename.split("_annotation_")[0]
-        videos.setdefault(vid, []).append(p)
+    vid = os.path.basename(annot_paths[0]).split("_annotation_")[0]
 
     # identifies video and subsq annotator with num segments
-    for vid, paths in videos.items():
-        print(f"\n=== Checking video '{vid}' ===")
-        logger.info(f"\n=== Checking video '{vid}' ===")
-        annots = {}
-        for p in paths:
-            segs = parse_via_csv(p)
-            annots[p] = segs
-            print(f" -> {os.path.basename(p)}: {len(segs)} segments")
-            logger.info(f" -> {os.path.basename(p)}: {len(segs)} segments")
+    message = f"=== Checking video '{vid}' ==="
+    print(message)
+    logger.info(message)
+    message = f" -> Whisper: \t\t\t\t\t{len(default_segs)} segments"
+    print(message)
+    logger.info(message)
 
-        iou_checker(annots, default_segs, iou_threshold, logger)
-        disagreement_checker(annots, default_segs, iou_threshold, logger)
+    # builds annotation dictionary
+    annots = {}
+    for p in annot_paths:
+        segs = parse_via_csv(p)
+        annots[p] = segs
+        message = f" -> {os.path.basename(p)}: \t{len(segs)} segments"
+        print(message)
+        logger.info(message)
 
-        print(f" --- Now merging based on time and relevance ---")
+    iou_checker(annots, default_segs, uit, logger)
+    disagreement_checker(annots, default_segs, logger)
 
-        time_merged = time_align(annots, default_segs, iou_threshold)
-        full_merge = relevance_align(time_merged)
+    message = f" == == == Now synchronizing based on time and relevance == == =="
+    print(message)
+    logger.info(message)
 
-        consensus_iou_checker(full_merge, default_segs, iou_threshold, logger)
-        consensus_disagreement_checker(full_merge, logger)
+    aligned = time_align(annots, default_segs, uit, lit, logger)
+    aligned, consensus = relevance_align(aligned)
+
+    iou_checker(aligned, default_segs, uit, logger)
+    disagreement_checker(aligned, default_segs, logger)
 
 def main():
     if len(sys.argv) < 4:
@@ -198,18 +220,24 @@ def main():
     default_tsv         = sys.argv[1]
     output_filename     = sys.argv[2]
     annot_paths         = sys.argv[3:]
-    iou_threshold       = Hyperparameters.iou_threshold
+    uit                 = Hyperparameters.upper_iou_threshold
+    lit                 = Hyperparameters.lower_iou_threshold
 
     logging.basicConfig(filename=output_filename, filemode='w', level=logging.INFO,
                         format='%(levelname)s: %(message)s')
     logger = logging.getLogger(__name__)
 
     default_segs = parse_default_segments(default_tsv)
-    check_annotations(default_segs, iou_threshold, annot_paths, logger)
+    check_annotations(default_segs, uit, lit, annot_paths, logger)
 
 if __name__ == "__main__":
     main()
 
+# python AnnotateMerge.py whisper_trans/00008_001_020.tsv AnnotationMerge/00008_001_020_annotation_checks.log csv_annotations_lucas/00008_001_020_annotation_lucas.csv csv_annotations_shardul/00008_001_020_annotation_shardul.csv
+# python AnnotateMerge.py whisper_trans/00012_006_003.tsv AnnotationMerge/00012_006_003_annotation_checks.log csv_annotations_lucas/00012_006_003_annotation_lucas.csv csv_annotations_shardul/00012_006_003_annotation_shardul.csv
+# python AnnotateMerge.py whisper_trans/00015_000_001.tsv AnnotationMerge/00015_000_001_annotation_checks.log csv_annotations_lucas/00015_000_001_annotation_lucas.csv csv_annotations_shardul/00015_000_001_annotation_shardul.csv
+# python AnnotateMerge.py whisper_trans/00019_000_002.tsv AnnotationMerge/00019_000_002_annotation_checks.log csv_annotations_lucas/00019_000_002_annotation_lucas.csv csv_annotations_shardul/00019_000_002_annotation_shardul.csv
+# python AnnotateMerge.py whisper_trans/00021_000_001.tsv AnnotationMerge/00021_000_001_annotation_checks.log csv_annotations_lucas/00021_000_001_annotation_lucas.csv csv_annotations_shardul/00021_000_001_annotation_shardul.csv
 # python AnnotateMerge.py whisper_trans/00026_000_001.tsv AnnotationMerge/00026_000_001_annotation_checks.log csv_annotations_lucas/00026_000_001_annotation_lucas.csv csv_annotations_shardul/00026_000_001_annotation_shardul.csv
 
 
@@ -217,4 +245,11 @@ if __name__ == "__main__":
 # make a script that checks annotations are consistent with whisper annotations -- time alignment
 # make a script that compares annotations' relevance score -- relevance alignment
 
-# currently, annotations that disagree partially default to partially-relevant : is this what you would like?
+# currently, annotations that disagree partially default to partially-relevant : is this what Dr. Davila would like?
+
+# report if default segs do not have ANY annotations - mising segment
+# report if annotations do not have any overlap at all - silence
+# generate warning if
+# change log / prints to message
+# find a lower iou_threshold that will warn but still expand annotation to default segment if there are no other annotations that match
+# change time align to use dictionaries for dsegs and segs that compute matches for every dseg to a seg and sort and match by decreasing iou_confidence

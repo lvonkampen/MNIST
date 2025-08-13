@@ -4,20 +4,15 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="f68265ec-7205-435a-9d6b-6d0aa938573f" name="Changes" comment="Added Automerge">
-      <change afterPath="$PROJECT_DIR$/WhisperVIA/AnnotateMerge.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/WhisperVIA/JSONtoCSV.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/WhisperVIA/json_anotations_lucas/00026_000_001_annotation_lucas.json" afterDir="false" />
+    <list default="true" id="f68265ec-7205-435a-9d6b-6d0aa938573f" name="Changes" comment="Added AnnotateMerge">
+      <change afterPath="$PROJECT_DIR$/WhisperVIA/Transcribe.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/WhisperVIA/json_annotations_lucas/00026_000_001_annotation_lucas.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/WhisperVIA/WhisperVIACSVtoJSON.py" beforeDir="false" afterPath="$PROJECT_DIR$/WhisperVIA/CSVtoJSON.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/WhisperVIA/WhisperVIAConfig.py" beforeDir="false" afterPath="$PROJECT_DIR$/WhisperVIA/Config.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/WhisperVIA/WhisperVIAConversion.py" beforeDir="false" afterPath="$PROJECT_DIR$/WhisperVIA/WhisperToNewVIA.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/WhisperVIA/WhisperVIADataset.py" beforeDir="false" afterPath="$PROJECT_DIR$/WhisperVIA/Dataset.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/WhisperVIA/WhisperVIAInference.py" beforeDir="false" afterPath="$PROJECT_DIR$/WhisperVIA/Inference.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/WhisperVIA/WhisperVIAMain.py" beforeDir="false" afterPath="$PROJECT_DIR$/WhisperVIA/Main.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/WhisperVIA/WhisperVIAModel.py" beforeDir="false" afterPath="$PROJECT_DIR$/WhisperVIA/Model.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/WhisperVIA/WhisperVIASummarize.py" beforeDir="false" afterPath="$PROJECT_DIR$/WhisperVIA/Summarize.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/WhisperVIA/AnnotateMerge.py" beforeDir="false" afterPath="$PROJECT_DIR$/WhisperVIA/AnnotateMerge.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/WhisperVIA/Config.py" beforeDir="false" afterPath="$PROJECT_DIR$/WhisperVIA/Config.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/WhisperVIA/WhisperToNewVIA.py" beforeDir="false" afterPath="$PROJECT_DIR$/WhisperVIA/WhisperToNewVIA.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/WhisperVIA/json_anotations_lucas/00026_000_001_annotation_lucas.json" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -67,6 +62,7 @@
     "Python.12-04-24_MNISTPractice.executor": "Run",
     "Python.12-11-24_MNISTMain.executor": "Run",
     "Python.12-11-24_MNISTModel.executor": "Run",
+    "Python.AnnotateMerge.executor": "Run",
     "Python.AudioMNISTInference.executor": "Run",
     "Python.AudioMNISTMain.executor": "Run",
     "Python.AudioMNISTModel.executor": "Run",
@@ -74,8 +70,11 @@
     "Python.ConvMNISTModel.executor": "Run",
     "Python.GoogleMain.executor": "Run",
     "Python.GoogleModel.executor": "Run",
+    "Python.JSONtoCSV.executor": "Run",
     "Python.MNISTMain.executor": "Run",
     "Python.MNISTModel.executor": "Run",
+    "Python.Transcribe.executor": "Run",
+    "Python.WhisperToNewVIA.executor": "Run",
     "Python.WhisperVIAAnnotateMerge.executor": "Debug",
     "Python.WhisperVIACSVtoJSON.executor": "Run",
     "Python.WhisperVIAConfig.executor": "Run",
@@ -238,7 +237,15 @@
       <option name="project" value="LOCAL" />
       <updated>1753235746267</updated>
     </task>
-    <option name="localTasksCounter" value="16" />
+    <task id="LOCAL-00016" summary="Added AnnotateMerge">
+      <option name="closed" value="true" />
+      <created>1754479094569</created>
+      <option name="number" value="00016" />
+      <option name="presentableId" value="LOCAL-00016" />
+      <option name="project" value="LOCAL" />
+      <updated>1754479094569</updated>
+    </task>
+    <option name="localTasksCounter" value="17" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
@@ -254,6 +261,7 @@
     <MESSAGE value="Created WhisperVIA configuration" />
     <MESSAGE value="Improved WhisperVIA" />
     <MESSAGE value="Added Automerge" />
-    <option name="LAST_COMMIT_MESSAGE" value="Added Automerge" />
+    <MESSAGE value="Added AnnotateMerge" />
+    <option name="LAST_COMMIT_MESSAGE" value="Added AnnotateMerge" />
   </component>
 </project>

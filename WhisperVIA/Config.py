@@ -42,6 +42,7 @@ class Hyperparameters:
         "irrelevant":0.0
     }
 
-    iou_threshold = 0.50
+    upper_iou_threshold = 0.75
+    lower_iou_threshold = 0.50
 
 # should be a json file so that it is easier to modify

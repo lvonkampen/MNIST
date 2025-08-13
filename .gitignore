@@ -1,3 +1,8 @@
 /MNIST/data/
 /AudioMNIST/data/
 
+/WhisperVIA/json_annotations_lucas/
+/WhisperVIA/csv_annotations_shardul/
+/WhisperVIA/csv_annotations_lucas/
+/WhisperVIA/json_annotations_shardul/
+/WhisperVIA/whisper_trans/

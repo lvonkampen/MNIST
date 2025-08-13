@@ -90,21 +90,21 @@ def create_new_via_project(csv_path, output_path):
 parent = Hyperparameters.parent_dir
 
 def cleanup(vid_id):
-    os.remove(f"{parent}csv_annotations_lucas/{vid_id}.json")
-    os.remove(f"{parent}csv_annotations_lucas/{vid_id}.srt")
-    os.remove(f"{parent}csv_annotations_lucas/{vid_id}.tsv")
-    os.remove(f"{parent}csv_annotations_lucas/{vid_id}.txt")
-    os.remove(f"{parent}csv_annotations_lucas/{vid_id}.vtt")
-    os.remove(f"{parent}csv_annotations_lucas/{vid_id}.wav")
+    os.remove(f"{parent}json_annotations_lucas/{vid_id}.json")
+    os.remove(f"{parent}json_annotations_lucas/{vid_id}.srt")
+    os.remove(f"{parent}json_annotations_lucas/{vid_id}.tsv")
+    os.remove(f"{parent}json_annotations_lucas/{vid_id}.txt")
+    os.remove(f"{parent}json_annotations_lucas/{vid_id}.vtt")
+    os.remove(f"{parent}json_annotations_lucas/{vid_id}.wav")
 
-if __name__ == '__main__':
-    vid_id = '00026_000_001'
+def main():
+    vid_id = '00010_001_001'
 
-    vid_path = f"C:/Git_Repositories/AccessMath/data/original_videos/lectures/{vid_id}.mp4"
-    wav_path = f"{parent}csv_annotations_lucas/{vid_id}.wav"
-    whisper_out_dir = f"{parent}csv_annotations_lucas/"
-    csv_path = f"{parent}csv_annotations_lucas/{vid_id}.tsv"
-    output_path = f"{parent}csv_annotations_lucas/{vid_id}_annotation.json"
+    vid_path        = f"C:/Git_Repositories/AccessMath/data/original_videos/lectures/{vid_id}.mp4"
+    wav_path        = f"{parent}/json_annotations_lucas/{vid_id}.wav"
+    whisper_out_dir = f"{parent}/json_annotations_lucas/"
+    csv_path        = f"{parent}/json_annotations_lucas/{vid_id}.tsv"
+    output_path     = f"{parent}/json_annotations_lucas/raw_{vid_id}_annotation.json"
 
     video_to_whisper(vid_path, wav_path, whisper_out_dir)
 
@@ -113,3 +113,6 @@ if __name__ == '__main__':
     print("...WhisperVIA Conversion Complete!")
 
     cleanup(vid_id)
+
+if __name__ == '__main__':
+    main()
