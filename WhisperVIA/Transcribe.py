@@ -1,12 +1,16 @@
 import os
 
 from Summarize import video_to_whisper
-from Config import Hyperparameters
+import json
 
 
 def main():
     # traverses every file in the lectures folder and converts it into a whisper transcript
-    parent = Hyperparameters.parent_dir
+
+    with open("config.json", "r") as f:
+        hyper = json.load(f)
+
+    parent = hyper["paths"]["parent_dir"]
     input_dir = 'C:/Git_Repositories/AccessMath/data/original_videos/lectures'
     output_dir = 'C:/Users/GoatF/Downloads/AI_Practice/WhisperVIA/whisper_trans'
 

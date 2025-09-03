@@ -2,8 +2,6 @@ import torch
 import torch.nn as nn
 import torch.nn.init as init
 
-from Config import Hyperparameters
-
 
 class ConvBlock(nn.Module):
     def __init__(self, activation, in_channels, out_channels, kernel_size=3, pool_size=2):
@@ -20,14 +18,14 @@ class ConvBlock(nn.Module):
         return self.pool(x)
 
 class WhisperVIAModel(nn.Module):
-    def __init__(self, activation, hidden_sizes, in_channels, num_classes, conv_channels):
+    def __init__(self, activation, hidden_sizes, in_channels, num_classes, conv_channels, adaptive_pool_size):
         super().__init__()
         self.conv_blocks = nn.ModuleList()
         c = in_channels
         for oc in conv_channels:
             self.conv_blocks.append(ConvBlock(activation, c, oc))
             c = oc
-        self.adaptive_pool = nn.AdaptiveAvgPool1d(25) # this should be a parameter
+        self.adaptive_pool = nn.AdaptiveAvgPool1d(adaptive_pool_size) # this should be a parameter
 
         # compute flattened size
         with torch.no_grad(): # this can be computed from parameters
@@ -63,9 +61,9 @@ class WhisperVIAModel(nn.Module):
         x = self.fc(x)
         return self.out(x)
 
-    def training_step(self, batch, loss_func):
+    def training_step(self, batch, loss_func, device):
         images, labels = batch
-        images, labels = images.to(Hyperparameters.device), labels.to(Hyperparameters.device)
+        images, labels = images.to(device), labels.to(device)
         labels = labels.view(-1, 1).float()
         out = self(images)
         loss = loss_func(out, labels)
@@ -87,9 +85,9 @@ class WhisperVIAModel(nn.Module):
         avg_loss = total_loss / len(data_loader) # len(data_loader) is batch size NOT segment
         return avg_loss
 
-    def validation_step(self, batch, loss_func):
+    def validation_step(self, batch, loss_func, device):
         images, labels = batch
-        images, labels = images.to(Hyperparameters.device), labels.to(Hyperparameters.device)
+        images, labels = images.to(device), labels.to(device)
         labels = labels.view(-1, 1).float()
 
         out = self(images)

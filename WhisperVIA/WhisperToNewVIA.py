@@ -5,10 +5,9 @@ import time
 import uuid
 
 from Summarize import video_to_whisper
-from Config import Hyperparameters
 
-def create_new_via_project(csv_path, output_path):
-    csv_basename = os.path.splitext(os.path.basename(csv_path))[0]
+def create_new_via_project(tsv_path, output_path):
+    csv_basename = os.path.splitext(os.path.basename(tsv_path))[0]
     new_fname = csv_basename + '.mp4'
 
     via_project = {
@@ -43,6 +42,7 @@ def create_new_via_project(csv_path, output_path):
                     "Relevant": "Relevant",
                     "Irrelevant": "Irrelevant",
                     "Partially-Relevant": "Partially-Relevant",
+                    "Neutral": "Neutral"
                 },
                 "default_option_id": "default"
             }
@@ -62,7 +62,7 @@ def create_new_via_project(csv_path, output_path):
         }
     }
 
-    read = pd.read_csv(csv_path, sep='\t')
+    read = pd.read_csv(tsv_path, sep='\t')
 
     for ids, row in read.iterrows():
         start_m = row['start']
@@ -87,9 +87,8 @@ def create_new_via_project(csv_path, output_path):
     with open(output_path, 'w', encoding='utf-8') as f:
         json.dump(via_project, f, ensure_ascii=False, indent=2)
 
-parent = Hyperparameters.parent_dir
 
-def cleanup(vid_id):
+def cleanup(vid_id, parent):
     os.remove(f"{parent}json_annotations_lucas/{vid_id}.json")
     os.remove(f"{parent}json_annotations_lucas/{vid_id}.srt")
     os.remove(f"{parent}json_annotations_lucas/{vid_id}.tsv")
@@ -98,21 +97,26 @@ def cleanup(vid_id):
     os.remove(f"{parent}json_annotations_lucas/{vid_id}.wav")
 
 def main():
-    vid_id = '00010_001_001'
+    with open("config.json", "r") as f:
+        hyper = json.load(f)
+
+    parent = hyper["paths"]["parent_dir"]
+
+    vid_id = '00020_000_001'
 
     vid_path        = f"C:/Git_Repositories/AccessMath/data/original_videos/lectures/{vid_id}.mp4"
     wav_path        = f"{parent}/json_annotations_lucas/{vid_id}.wav"
     whisper_out_dir = f"{parent}/json_annotations_lucas/"
-    csv_path        = f"{parent}/json_annotations_lucas/{vid_id}.tsv"
+    tsv_path        = f"{parent}/whisper_trans/{vid_id}.tsv"
     output_path     = f"{parent}/json_annotations_lucas/raw_{vid_id}_annotation.json"
 
-    video_to_whisper(vid_path, wav_path, whisper_out_dir)
+    # video_to_whisper(vid_path, wav_path, whisper_out_dir)
 
     print("Starting WhisperVIA Conversion...")
-    create_new_via_project(csv_path, output_path)
+    create_new_via_project(tsv_path, output_path)
     print("...WhisperVIA Conversion Complete!")
 
-    cleanup(vid_id)
+    # cleanup(vid_id, parent)
 
 if __name__ == '__main__':
     main()

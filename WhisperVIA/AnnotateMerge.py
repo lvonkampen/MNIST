@@ -1,15 +1,15 @@
+import csv
 import sys
 import os
 import ast
+import uuid
 
 import pandas as pd
 import logging
+import json
 
 
-from Config import Hyperparameters
-
-
-def parse_via_csv(path):
+def parse_via_csv(path, l_map):
     df = pd.read_csv(
         path, comment='#', header=None,
         names=["id","file_list","flags","temporal_coordinates","spatial_coordinates","metadata"],
@@ -24,6 +24,8 @@ def parse_via_csv(path):
         e = int(coords[1] * 1000)
         meta = ast.literal_eval(row["metadata"])
         label = meta.get("1", "").lower()
+        if label not in l_map:
+            continue
         segs[sidx] = {'start': s, 'end': e, 'label': label}
     return segs
 
@@ -39,6 +41,73 @@ def iou(a, b):
     len_b = max(0, eb - sb)
     union = len_a + len_b - inter
     return inter / union if union > 0 else 0.0
+
+def time_merge(annots, default_segs, upper_iou_thres, lower_iou_thres, logger):
+    # merge annotations that map to a single whisper segment
+    merged = {}
+    for path, segs in annots.items():
+        key = os.path.basename(path)
+        merged[key] = {}
+
+        # initializes every didx for their combinable segments
+        assigned = {didx: [] for didx in range(len(default_segs))}
+
+        # goes through every segment and matches to the default segment with the highest iou
+        # - multiple segs matchable to a single default segment
+        for sidx, s in segs.items():
+            best_didx, best_iou = None, 0
+            for didx, dseg in enumerate(default_segs):
+                iovu = iou(s, dseg)
+                if iovu > best_iou:
+                    best_iou = iovu
+                    best_didx = didx
+            # upper iou success
+            if best_iou >= upper_iou_thres:
+                assigned[best_didx].append(s)
+            # lower iou threshold warning
+            elif best_iou >= lower_iou_thres:
+                assigned[best_didx].append(s)
+                message = f"[W] {os.path.basename(path)}: seg #{sidx}: [{s['start'] / 1000:.3f},{s['end'] / 1000:.3f}] has lower IoU = {best_iou:.2f} > {lower_iou_thres:.2f}"
+                print(message)
+                logger.warning(message)
+            # minimal iou threshold error - still adds to merge
+            elif best_iou is not None:
+                assigned[best_didx].append(s)
+                message = f"[E] {os.path.basename(path)}: seg #{sidx}: [{s['start'] / 1000:.3f},{s['end'] / 1000:.3f}] has minimal IoU = {best_iou:.2f}"
+                print(message)
+                logger.error(message)
+            # detached seg error
+            else:
+                message = f"[E] - {os.path.basename(path)}: seg #{sidx}: [{s['start'] / 1000:.3f},{s['end'] / 1000:.3f}] has no matching d_seg"
+                print(message)
+                logger.error(message)
+
+        for didx, segments in assigned.items():
+            # detached dseg error
+            if not segments:
+                message = f"[E] - {os.path.basename(path)}: d_seg #{didx}: [{default_segs[didx]['start'] / 1000:.3f},{default_segs[didx]['end'] / 1000:.3f}] has no matching seg"
+                print(message)
+                logger.error(message)
+                continue
+
+            # creates set to verify if the labels conflict and converts if so
+            labels = {s["label"] for s in segments}
+            if len(labels) > 1:
+                merged_label = "partially-relevant"
+                message = f"[W] {os.path.basename(path)}: dseg #{didx}: had conflicting labels {labels} -> merged to partially-relevant"
+                print(message)
+                logger.warning(message)
+            else:
+                merged_label = labels.pop()
+
+            # converted segment is added
+            merged[key][didx] = {
+                "start": default_segs[didx]["start"],
+                "end": default_segs[didx]["end"],
+                "label": merged_label
+            }
+
+    return merged
 
 def time_align(annots, default_segs, upper_iou_thres, lower_iou_thres, logger):
     # align annotations that map to whisper segment
@@ -90,7 +159,7 @@ def time_align(annots, default_segs, upper_iou_thres, lower_iou_thres, logger):
                         'end': d[d_key]['end'],
                         'label': s[s_key]['label']
                     }
-                    message = f"[W] {os.path.basename(path)}: seg #{sidx}: [{s[s_key]['start'] / 1000:.3f},{s[s_key]['end'] / 1000:.3f}] has lower IoU = {iovu:.2f} < {lower_iou_thres:.2f}"
+                    message = f"[W] {os.path.basename(path)}: seg #{sidx}: [{s[s_key]['start'] / 1000:.3f},{s[s_key]['end'] / 1000:.3f}] has lower IoU = {iovu:.2f} > {lower_iou_thres:.2f}"
                     print(message)
                     logger.warning(message)
 
@@ -106,9 +175,10 @@ def time_align(annots, default_segs, upper_iou_thres, lower_iou_thres, logger):
                 message = f"[E] {os.path.basename(path)}: seg #{sidx}: [{s['start'] / 1000:.3f},{s['end'] / 1000:.3f}] has no matching d_seg"
                 print(message)
                 logger.error(message)
+
     return aligned
 
-def relevance_align(aligned):
+def relevance_align(aligned, l_map):
     # compute agreed relevance from multiple annotators : labels 'CONFLICT' if default segment has conflicting scorings
     consensus = {}
 
@@ -121,19 +191,13 @@ def relevance_align(aligned):
         start, end = example['start'], example['end']
 
         # collect all segment labels for specific default_seg
-        labels = set(ann[idx]['label'] for ann in aligned.values() if idx in ann)
+        labels = [ann[idx]['label'] for ann in aligned.values() if idx in ann]
         # merges the set of labels spit from time_align to a single label
-        if 'relevant' in labels and 'irrelevant' in labels:
-            label = 'conflict'
-        elif 'partially-relevant' in labels:
-            label = 'partially-relevant'
-        elif 'relevant' in labels:
-            label = 'relevant'
-        elif 'irrelevant' in labels:
-            label = 'irrelevant'
-        else:
-            label = 'unknown'
-        consensus[idx] = {'start': start, 'end': end, 'label': label}
+        num_annotators = len(labels)
+        sum_labels = sum(l_map.get(label) for label in labels)
+        combined_score = sum_labels / num_annotators
+
+        consensus[idx] = {'start': start, 'end': end, 'label': combined_score}
 
     return aligned, consensus
 
@@ -153,7 +217,7 @@ def iou_checker(annots, default_segs, iou_threshold, logger):
                 print(message)
                 logger.error(message)
 
-def disagreement_checker(annots, default_segs, logger, rel='relevant', irr='irrelevant', con='conflict', unk='unknown'):
+def disagreement_checker(annots, default_segs, logger, rel='relevant', irr='irrelevant'):
     # Disagreement errors: for each default segment, if one annotator says “relevant” and another “irrelevant”, warn.
     message = " - - - Determining disagreement errors... - - - "
     print(message)
@@ -166,13 +230,41 @@ def disagreement_checker(annots, default_segs, logger, rel='relevant', irr='irre
             if entry:
                 labels.add(entry.get('label'))
         # checks label relevance
-            if (rel in labels and irr in labels) or (con in labels) or (unk in labels):
+            if rel in labels and irr in labels:
                 start, end = dseg['start'], dseg['end']
                 message = f"[W] Dseg #{didx} [{start / 1000:.3f},{end / 1000:.3f}]s: conflicting labels {labels}"
                 print(message)
                 logger.warning(message)
 
-def check_annotations(default_segs, uit, lit, annot_paths, logger):
+def write_consensus_csv(output_csv_path, consensus, logger):
+    rows = []
+    for idx in sorted(consensus.keys()):
+        ann = consensus[idx]
+        start = float(ann['start']) / 1000
+        end   = float(ann['end']) / 1000
+        score = ann['label']
+
+        metadata_obj = {"1": score}
+
+        mid = f"1_{uuid.uuid4().hex[:8]}"
+        file_list = json.dumps(["1"])            # will be quoted in CSV as [""1""]
+        flags = 0
+        temporal_coordinates = f"[{start}, {end}]"
+        spatial_coordinates = json.dumps([])  # "[]"
+        metadata_str = json.dumps(metadata_obj)
+
+        rows.append([mid, file_list, flags, temporal_coordinates, spatial_coordinates, metadata_str])
+
+    with open(output_csv_path, 'w', newline='', encoding='utf-8') as csvfile:
+        writer = csv.writer(csvfile, quoting=csv.QUOTE_MINIMAL)
+        for r in rows:
+            writer.writerow(r)
+
+    message = f": :: ::: Written consensus CSV to {output_csv_path} ({len(rows)} rows) ::: :: :"
+    print(message)
+    logger.info(message)
+
+def check_annotations(default_segs, uit, lit, annot_paths, l_map, logger):
     for p in annot_paths:
         if not p.lower().endswith(".csv"):
             message = f"[W] Skipping non-CSV path {p!r}"
@@ -192,7 +284,7 @@ def check_annotations(default_segs, uit, lit, annot_paths, logger):
     # builds annotation dictionary
     annots = {}
     for p in annot_paths:
-        segs = parse_via_csv(p)
+        segs = parse_via_csv(p, l_map)
         annots[p] = segs
         message = f" -> {os.path.basename(p)}: \t{len(segs)} segments"
         print(message)
@@ -205,51 +297,58 @@ def check_annotations(default_segs, uit, lit, annot_paths, logger):
     print(message)
     logger.info(message)
 
-    aligned = time_align(annots, default_segs, uit, lit, logger)
-    aligned, consensus = relevance_align(aligned)
+    aligned = time_merge(annots, default_segs, uit, lit, logger)
+    aligned, consensus = relevance_align(aligned, l_map)
 
     iou_checker(aligned, default_segs, uit, logger)
     disagreement_checker(aligned, default_segs, logger)
 
+    return consensus
+
 def main():
     if len(sys.argv) < 4:
         print("Usage:")
-        print(f"\tpython {sys.argv[0]} <default_whisper.tsv> <output_file> <annot1.csv> [<annot2.csv> ...]")
+        print(f"\tpython {sys.argv[0]} <default_whisper.tsv> <output_log> <output_file> <annot1.csv> [<annot2.csv> ...]")
         sys.exit(1)
 
     default_tsv         = sys.argv[1]
-    output_filename     = sys.argv[2]
-    annot_paths         = sys.argv[3:]
-    uit                 = Hyperparameters.upper_iou_threshold
-    lit                 = Hyperparameters.lower_iou_threshold
+    output_log          = sys.argv[2]
+    output_file         = sys.argv[3]
+    annot_paths         = sys.argv[4:]
 
-    logging.basicConfig(filename=output_filename, filemode='w', level=logging.INFO,
+    with open("config.json", "r") as f:
+        hyper = json.load(f)
+
+    uit                 = hyper["evaluation"]["upper_iou_threshold"]
+    lit                 = hyper["evaluation"]["lower_iou_threshold"]
+    l_map               = hyper["label_map"]
+
+    logging.basicConfig(filename=output_log, filemode='w', level=logging.INFO,
                         format='%(levelname)s: %(message)s')
     logger = logging.getLogger(__name__)
 
     default_segs = parse_default_segments(default_tsv)
-    check_annotations(default_segs, uit, lit, annot_paths, logger)
+    consensus = check_annotations(default_segs, uit, lit, annot_paths, l_map, logger)
+    write_consensus_csv(output_file, consensus, logger)
 
 if __name__ == "__main__":
     main()
 
-# python AnnotateMerge.py whisper_trans/00008_001_020.tsv AnnotationMerge/00008_001_020_annotation_checks.log csv_annotations_lucas/00008_001_020_annotation_lucas.csv csv_annotations_shardul/00008_001_020_annotation_shardul.csv
-# python AnnotateMerge.py whisper_trans/00012_006_003.tsv AnnotationMerge/00012_006_003_annotation_checks.log csv_annotations_lucas/00012_006_003_annotation_lucas.csv csv_annotations_shardul/00012_006_003_annotation_shardul.csv
-# python AnnotateMerge.py whisper_trans/00015_000_001.tsv AnnotationMerge/00015_000_001_annotation_checks.log csv_annotations_lucas/00015_000_001_annotation_lucas.csv csv_annotations_shardul/00015_000_001_annotation_shardul.csv
-# python AnnotateMerge.py whisper_trans/00019_000_002.tsv AnnotationMerge/00019_000_002_annotation_checks.log csv_annotations_lucas/00019_000_002_annotation_lucas.csv csv_annotations_shardul/00019_000_002_annotation_shardul.csv
-# python AnnotateMerge.py whisper_trans/00021_000_001.tsv AnnotationMerge/00021_000_001_annotation_checks.log csv_annotations_lucas/00021_000_001_annotation_lucas.csv csv_annotations_shardul/00021_000_001_annotation_shardul.csv
-# python AnnotateMerge.py whisper_trans/00026_000_001.tsv AnnotationMerge/00026_000_001_annotation_checks.log csv_annotations_lucas/00026_000_001_annotation_lucas.csv csv_annotations_shardul/00026_000_001_annotation_shardul.csv
+# python AnnotateMerge.py whisper_trans/00008_001_020.tsv AnnotationMerge/00008_001_020_annotation_merge_checks.log csv_annotations_merged/00008_001_020_annotation_merge.csv csv_annotations_lucas/00008_001_020_annotation_lucas.csv csv_annotations_shardul/00008_001_020_annotation_shardul.csv
+# python AnnotateMerge.py whisper_trans/00012_006_003.tsv AnnotationMerge/00012_006_003_annotation_merge_checks.log csv_annotations_merged/00012_006_003_annotation_merge.csv csv_annotations_lucas/00012_006_003_annotation_lucas.csv csv_annotations_shardul/00012_006_003_annotation_shardul.csv
+# python AnnotateMerge.py whisper_trans/00015_000_001.tsv AnnotationMerge/00015_000_001_annotation_merge_checks.log csv_annotations_merged/00015_000_001_annotation_merge.csv csv_annotations_lucas/00015_000_001_annotation_lucas.csv csv_annotations_shardul/00015_000_001_annotation_shardul.csv
+# python AnnotateMerge.py whisper_trans/00019_000_002.tsv AnnotationMerge/00019_000_002_annotation_merge_checks.log csv_annotations_merged/00019_000_002_annotation_merge.csv csv_annotations_lucas/00019_000_002_annotation_lucas.csv csv_annotations_shardul/00019_000_002_annotation_shardul.csv
+# python AnnotateMerge.py whisper_trans/00021_000_001.tsv AnnotationMerge/00021_000_001_annotation_merge_checks.log csv_annotations_merged/00021_000_001_annotation_merge.csv csv_annotations_lucas/00021_000_001_annotation_lucas.csv csv_annotations_shardul/00021_000_001_annotation_shardul.csv
+# python AnnotateMerge.py whisper_trans/00026_000_001.tsv AnnotationMerge/00026_000_001_annotation_merge_checks.log csv_annotations_merged/00026_000_001_annotation_merge.csv csv_annotations_lucas/00026_000_001_annotation_lucas.csv csv_annotations_shardul/00026_000_001_annotation_shardul.csv
 
 
-# store warnings in a file
-# make a script that checks annotations are consistent with whisper annotations -- time alignment
-# make a script that compares annotations' relevance score -- relevance alignment
+# record tutorial of using VIA annotator using different features - further instruction useful
+# put video and annotation files into a specific folder to put in Dropbox for other annotators and make the video
+    # unlisted YouTube video and put it in Dropbox
 
-# currently, annotations that disagree partially default to partially-relevant : is this what Dr. Davila would like?
 
-# report if default segs do not have ANY annotations - mising segment
-# report if annotations do not have any overlap at all - silence
-# generate warning if
-# change log / prints to message
-# find a lower iou_threshold that will warn but still expand annotation to default segment if there are no other annotations that match
-# change time align to use dictionaries for dsegs and segs that compute matches for every dseg to a seg and sort and match by decreasing iou_confidence
+# save the merged annotations before merging annotators to better assess issues with annotations
+# look into unsupervised training to make "psuedo-labels" before annotating
+    # look for open-model LLMs to extrapolate label-importance
+    # maybe use keywords as a classification
+    # think of tasks to ask the model to pre-text train

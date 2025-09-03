@@ -5,11 +5,11 @@ import pandas as pd
 import ast
 import torchaudio
 import matplotlib.pyplot as plt
+import json
 
 from moviepy import VideoFileClip, TextClip, CompositeVideoClip, concatenate_videoclips
-
-from Config import Hyperparameters
 from Model import WhisperVIAModel
+
 
 def video_to_whisper(vid, wav, out_dir):
     # Extract audio from video using ffmpeg
@@ -31,9 +31,8 @@ def run_inference(tsv, wav, transform, device, model, sample_rate):
     audio_dur_s = info.num_frames / info.sample_rate
     print(f"Audio duration: {audio_dur_s:.2f}s")
 
-    max_time = max(df['start'].max(), df['end'].max())
-    df['start_ms'] = df['start'].astype(int)
-    df['end_ms'] = df['end'].astype(int)
+    df['start_ms'] = (df['start'] * 1000).astype(int)
+    df['end_ms'] = (df['end'] * 1000).astype(int)
 
     results = []
 
@@ -50,7 +49,7 @@ def run_inference(tsv, wav, transform, device, model, sample_rate):
         results.append((start_ms, end_ms, score))
     return results
 
-def concat_segments(segments, max_duration, vid, summary, automerge):
+def concat_segments(segments, max_duration, vid, summary, automerge, hyper):
     segments.sort(key=lambda x: x[2], reverse=True)
 
     # Pick top‑scoring segments up to max_duration
@@ -74,7 +73,7 @@ def concat_segments(segments, max_duration, vid, summary, automerge):
             # if total + length > max_duration:
             #     continue
             gap = curr[0] - prev[1]
-            if (gap) <= Hyperparameters.merge_gap * 1000:
+            if gap <= hyper["data"]["merge_gap"] * 1000:
                 prev[1] = curr[1]
                 prev[2] = max(prev[2], curr[2])
             else:
@@ -87,7 +86,6 @@ def concat_segments(segments, max_duration, vid, summary, automerge):
         merged.append(prev)
         chosen = merged
         print(f"Merged to {len(chosen)} clips : {total / 1000:.1f}s total")
-
 
     # Load the full video once
     full_video = VideoFileClip(vid)
@@ -115,30 +113,34 @@ def concat_segments(segments, max_duration, vid, summary, automerge):
 
     print(f"Summary written to {summary}")
 
-parent = Hyperparameters.parent_dir
 
-def cleanup(vid_id):
-    os.remove(f"{parent}WhisperVIASummarization/{vid_id}.json")
-    os.remove(f"{parent}WhisperVIASummarization/{vid_id}.srt")
-    os.remove(f"{parent}WhisperVIASummarization/{vid_id}.tsv")
-    os.remove(f"{parent}WhisperVIASummarization/{vid_id}.txt")
-    os.remove(f"{parent}WhisperVIASummarization/{vid_id}.vtt")
-    os.remove(f"{parent}WhisperVIASummarization/{vid_id}.wav")
+def cleanup(vid_id, parent):
+    os.remove(f"{parent}summaries/{vid_id}.json")
+    os.remove(f"{parent}summaries/{vid_id}.srt")
+    os.remove(f"{parent}summaries/{vid_id}.tsv")
+    os.remove(f"{parent}summaries/{vid_id}.txt")
+    os.remove(f"{parent}summaries/{vid_id}.vtt")
+    os.remove(f"{parent}summaries/{vid_id}.wav")
 
-def summarize(vid_id):
+def summarize(vid_id, parent, hyper):
     vid_path        = f"C:/Git_Repositories/AccessMath/data/original_videos/lectures/{vid_id}.mp4"
-    wav_path        = f"{parent}WhisperVIASummarization/{vid_id}.wav"
-    whisper_out_dir = f"{parent}WhisperVIASummarization/"
-    tsv_path        = f"{parent}WhisperVIASummarization/{vid_id}.tsv"
+    wav_path        = f"{parent}summaries/{vid_id}.wav"
+    whisper_out_dir = f"{parent}summaries/"
+    tsv_path        = f"{parent}summaries/{vid_id}.tsv"
     model_path      = f"{parent}WhisperVIAModel.pth"
-    summary_path    = f"{parent}WhisperVIASummarization/{vid_id}_summary_automerge.mp4" if Hyperparameters.automerge else f"{parent}WhisperVIASummarization/{vid_id}_summary.mp4"
+    summary_path    = f"{parent}summaries/{vid_id}_summary_automerge.mp4" if hyper["data"]["automerge"] else f"{parent}summaries/{vid_id}_summary.mp4"
 
-    model = WhisperVIAModel(Hyperparameters.activation, Hyperparameters.hidden_feat, Hyperparameters.in_feat,
-                            Hyperparameters.out_feat, Hyperparameters.conv_channels)
+    model = WhisperVIAModel(hyper["model"]["activation"],
+                            hyper["model"]["hidden_feat"],
+                            hyper["model"]["in_feat"],
+                            hyper["model"]["out_feat"],
+                            hyper["model"]["conv_channels"],
+                            hyper["model"]["adaptive_pool_size"]
+                            )
 
-    state_dict = torch.load(model_path, map_location=Hyperparameters.device, weights_only=True)
+    state_dict = torch.load(model_path, map_location=hyper["device"], weights_only=True)
     model.load_state_dict(state_dict)
-    model.to(Hyperparameters.device).eval()
+    model.to(hyper["device"]).eval()
 
     video_to_whisper(vid_path, wav_path, whisper_out_dir)
     #segments = run_inference(tsv_path, wav_path, Hyperparameters.transform, Hyperparameters.device, model, Hyperparameters.sample_rate)
@@ -157,10 +159,18 @@ def parse_via_annotations(path, label_map):
     # Extract label and score
     def extract_label(meta):
         label = meta.get("1", None)  # "1" is the attribute ID from the header
-        return label.lower() if label else None
+        if isinstance(label, float):
+            return label
+        elif isinstance(label, str):
+            return label.lower()
+        else:
+            return None
 
     df["label"] = df["metadata"].apply(extract_label)
-    df = df[df["label"].isin(label_map)]  # filter out Whisper or unknowns
+    if isinstance(df["label"], float):
+        df = df[df["label"]]
+    elif isinstance(df["label"], str):
+        df = df[df["label"].isin(label_map)]  # filter out Whisper or unknowns
 
     # Convert to (start_ms, end_ms, score)
     segments = []
@@ -169,26 +179,26 @@ def parse_via_annotations(path, label_map):
         if len(coords) == 2:
             start_ms = int(coords[0] * 1000)
             end_ms = int(coords[1] * 1000)
-            score = label_map[row["label"]]
+            score = label_map[row["label"]] if isinstance(row["label"], str) else row["label"]
             segments.append((start_ms, end_ms, score))
     return segments
 
-def sum_ground_truth(vid_id):
+def sum_ground_truth(vid_id, parent, hyper):
     vid_path        = f"C:/Git_Repositories/AccessMath/data/original_videos/lectures/{vid_id}.mp4"
-    ann_path        = f"{parent}csv_annotations_shardul/{vid_id}_annotation.csv" # some annotations are called _annotation while others are _annotations !
-    summary_path    = f"{parent}WhisperVIASummarization/{vid_id}_ground_truth.mp4"
+    ann_path        = f"{parent}csv_annotations_merged/{vid_id}_annotation.csv" # some annotations are called _annotation while others are _annotations !
+    summary_path    = f"{parent}summaries/{vid_id}_ground_truth_merged.mp4"
 
-    segments = parse_via_annotations(ann_path, Hyperparameters.label_map)
+    segments = parse_via_annotations(ann_path, hyper["label_map"])
 
-    concat_segments(segments, Hyperparameters.max_duration * 1000, vid_path, summary_path, False)
+    concat_segments(segments, hyper["data"]["max_duration"] * 1000, vid_path, summary_path, False, hyper)
 
-    cleanup(vid_id)
+    cleanup(vid_id, parent)
 
-def make_histogram(vid_id):
+def make_histogram(vid_id, parent, hyper):
     # segments must be sorted by start time
     ann_path = f"{parent}csv_annotations_shardul/{vid_id}_annotation_shardul.csv"
 
-    segments = parse_via_annotations(ann_path, Hyperparameters.label_map)
+    segments = parse_via_annotations(ann_path, hyper["label_map"])
 
     segs = sorted(segments, key=lambda x: x[0])
     gaps = []
@@ -203,9 +213,13 @@ def make_histogram(vid_id):
     plt.show()
 
 def main():
+    with open("config.json", "r") as f:
+        hyper = json.load(f)
+    parent = hyper["paths"]["parent_dir"]
+
     vid_id = "00026_000_001"
-    summarize(vid_id)
-    # sum_ground_truth(vid_id)
+    #summarize(vid_id, parent, hyper)
+    sum_ground_truth(vid_id, parent, hyper)
     #make_histogram(vid_id)
 
 if __name__ == "__main__":

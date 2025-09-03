@@ -1,0 +1,68 @@
+{
+  "device": "cuda",
+
+  "model": {
+    "in_feat": 40,
+    "hidden_feat": [1024, 256, 128],
+    "out_feat": 1,
+    "conv_channels": [32, 64],
+    "adaptive_pool_size": 25,
+    "activation": "Sigmoid"
+  },
+
+  "training": {
+    "batch_size": 1024,
+    "train_shuffle": false,
+    "val_shuffle": false,
+    "loss_func": "MSELoss",
+    "optim_func": "Adam",
+    "initial_learning_rate": 0.01,
+    "epochs": 5000,
+    "patience": 2
+  },
+
+  "_comment": "data representation category - change name",
+  "data": {
+    "sample_rate": 16000,
+    "transform": {
+      "type": "MFCC",
+      "n_mfcc": 40,
+      "melkwargs": {
+        "n_mels": 64,
+        "n_fft": 400,
+        "hop_length": 160
+      }
+    },
+    "max_examples": 5,
+    "max_duration": 60.0,
+    "automerge": true,
+    "merge_gap": 1
+  },
+
+  "split_speaker": {
+    "train_perc": 0.7,
+    "valid_perc": 0.2,
+    "rand_seed": 3,
+    "_comment": "put with the rest of the other paths",
+    "path": "speaker_split.json",
+    "force_new": false
+  },
+
+  "paths": {
+    "script_dir": ".",
+    "audio_dir": "raudio",
+    "ann_dir": "csv_annotations_shardul",
+    "parent_dir": "C:/Users/GoatF/Downloads/AI_Practice/WhisperVIA/"
+  },
+
+  "label_map": {
+    "relevant": 1.0,
+    "partially-relevant": 0.5,
+    "irrelevant": 0.0
+  },
+
+  "evaluation": {
+    "upper_iou_threshold": 0.75,
+    "lower_iou_threshold": 0.50
+  }
+}

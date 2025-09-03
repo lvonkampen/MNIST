@@ -7,17 +7,46 @@ import subprocess
 import pandas as pd
 import torch
 import torchaudio
+import torchaudio.transforms as T
+
 
 from Model import WhisperVIAModel
-from Config import Hyperparameters
 from Main import testing_examples, split_speakers, CustomWhisperVIADataset, collate_fn, DataLoader
 
-model = WhisperVIAModel(Hyperparameters.activation, Hyperparameters.hidden_feat, Hyperparameters.in_feat,
-                        Hyperparameters.out_feat, Hyperparameters.conv_channels)
+with open("config.json", "r") as f:
+    hyper = json.load(f)
 
-train_sp, val_sp, test_sp = split_speakers(Hyperparameters.audio_dir)
-test_ds = CustomWhisperVIADataset(Hyperparameters.audio_dir, Hyperparameters.ann_dir, Hyperparameters.transform, speakers_include=test_sp)
-test_loader = DataLoader(test_ds, Hyperparameters.batch_size, shuffle=False, collate_fn=collate_fn)
+device = torch.device(hyper["device"] if torch.cuda.is_available() else "cpu")
+
+model = WhisperVIAModel(hyper["model"]["activation"],
+                        hyper["model"]["hidden_feat"],
+                        hyper["model"]["in_feat"],
+                        hyper["model"]["out_feat"],
+                        hyper["model"]["conv_channels"],
+                        hyper["model"]["adaptive_pool_size"]
+                        )
+
+train_sp, val_sp, test_sp = split_speakers(
+    audio_dir=hyper["paths"]["audio_dir"],
+    train_perc=hyper["split_speaker"]["train_perc"],
+    val_perc=hyper["split_speaker"]["valid_perc"],
+    seed=hyper["split_speaker"]["rand_seed"],
+    save_path=hyper["split_speaker"]["path"],
+    force_new=hyper["split_speaker"]["force_new"]
+)
+
+if hyper["transform"]["type"] == "MFCC":
+    transform = T.MFCC(
+        sample_rate=hyper["data"]["sample_rate"],
+        n_mfcc=hyper["data"]["transform"]["n_mfcc"],
+        melkwargs=hyper["data"]["transform"]["melkwargs"]
+    )
+else:
+    raise ValueError(f"Unknown transform type: {hyper["data"]["transform"]["type"]}")
+
+test_ds = CustomWhisperVIADataset(hyper["paths"]["audio_dir"], hyper["paths"]["ann_dir"], transform,
+                                  speakers_include=test_sp)
+test_loader = DataLoader(test_ds, hyper["training"]["batch_size"], shuffle=False, collate_fn=collate_fn)
 
 
 def load_model(path, device):
@@ -122,9 +151,9 @@ if __name__=="__main__":
     wav = 'C:\\Users\\GoatF\\Downloads\\AI_Practice\\WhisperVIA\\raudio\\00000_000_001.wav'
     model_path = 'C:\\Users\\GoatF\\Downloads\\AI_Practice\\WhisperVIA\\WhisperVIAModel_NEW.pth'
 
-    model = load_model(model_path, Hyperparameters.device)
+    model = load_model(model_path, hyper["device"])
 
-    testing_examples(model, test_loader, Hyperparameters.max_examples, Hyperparameters.device)
+    testing_examples(model, test_loader, hyper["data"]["max_examples"], device)
     # FINISH WORKING ON TESTING EXAMPLES TO PROVIDE TEMPORAL_COORDS + ASSOCIATED PREDS
 
-    run_inference_from_via_csv(csv, wav, model, Hyperparameters.transform, Hyperparameters.device)
+    run_inference_from_via_csv(csv, wav, model, hyperparameters.transform, hyperparameters.device)

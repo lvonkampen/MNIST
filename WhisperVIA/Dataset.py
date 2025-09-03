@@ -1,16 +1,19 @@
 import os
 import re
 import json
-from itertools import count
 
 import pandas as pd
 import torchaudio
+import torchaudio.transforms as T
 from torch.utils.data import Dataset
 
-from Config import Hyperparameters
+
+with open("config.json", "r") as f:
+    cfg = json.load(f)
 
 class CustomWhisperVIADataset(Dataset):
-    label_map = Hyperparameters.label_map
+    label_map = cfg["label_map"]
+    sample_rate = cfg["sample_rate"]
 
     TIME_RE = re.compile(r"[0-9]+\.?[0-9]*")
 
@@ -89,8 +92,13 @@ class CustomWhisperVIADataset(Dataset):
                     label_str = meta.get("1", label_str).lower()
                 except Exception:
                     raise Exception("Typo found within file: " + label_str)
-                if label_str == "whisper": continue
-                label = self.label_map.get(label_str, 0)
+
+                try:
+                    label = float(label_str)
+                except ValueError:
+                    label = self.label_map.get(label_str, -1)
+                    if label == -1:
+                        raise Exception("Unknown label found: " + label_str)
 
                 self.segments.append((wav_p, start_s, end_s, label))
 
@@ -100,8 +108,8 @@ class CustomWhisperVIADataset(Dataset):
     def __getitem__(self, idx):
         wav_p, start_s, end_s, label = self.segments[idx]
 
-        start_frame = int(start_s * Hyperparameters.sample_rate)
-        num_frames  = int((end_s - start_s) * Hyperparameters.sample_rate)
+        start_frame = int(start_s * self.sample_rate)
+        num_frames  = int((end_s - start_s) * self.sample_rate)
 
         wf, _ = torchaudio.load(wav_p, frame_offset=start_frame, num_frames=num_frames)
 
@@ -114,7 +122,16 @@ class CustomWhisperVIADataset(Dataset):
 
 
 def main():
-    dataset = CustomWhisperVIADataset(Hyperparameters.audio_dir, Hyperparameters.ann_dir, Hyperparameters.transform)
+    if cfg["transform"]["type"] == "MFCC":
+        transform = T.MFCC(
+            sample_rate=cfg["sample_rate"],
+            n_mfcc=cfg["transform"]["n_mfcc"],
+            melkwargs=cfg["transform"]["melkwargs"]
+        )
+    else:
+        raise ValueError(f"Unknown transform type: {cfg['transform']['type']}")
+
+    dataset = CustomWhisperVIADataset(cfg["audio_dir"], cfg["ann_dir"], transform)
     durations = [end - start for _, start, end, _ in dataset.segments]
     print(f"Min: {min(durations):.2f}s | Max: {max(durations):.2f}s | Avg: {sum(durations) / len(durations):.2f}s")
 

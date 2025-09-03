@@ -3,7 +3,8 @@ import time
 import torch
 import torch.nn as nn
 import torchaudio
-from torch.utils.data import Dataset, DataLoader, Subset
+import torchaudio.transforms as T
+from torch.utils.data import Dataset, DataLoader
 
 import wave as wav
 import numpy as np
@@ -12,22 +13,21 @@ import json
 import random
 from sklearn.metrics import precision_score, recall_score, f1_score
 
-from WhisperVIA.Dataset import CustomWhisperVIADataset
+from Dataset import CustomWhisperVIADataset
 from Model import WhisperVIAModel
-from Config import Hyperparameters
 
 def collate_fn(batch):
     xs, ys = zip(*batch)
-    max_T = max(x.shape[1] for x in xs)
+    max_t = max(x.shape[1] for x in xs)
     xs_padded = [
-        nn.functional.pad(x, (0, max_T - x.shape[1]), mode='constant', value=0)
+        nn.functional.pad(x, (0, max_t - x.shape[1]), mode='constant', value=0)
         for x in xs
     ]
     x_batch = torch.stack(xs_padded, dim=0)
     y_batch = torch.tensor(ys, dtype=torch.float32)
     return x_batch, y_batch
 
-def evaluate(model, val_loader, loss_func):
+def evaluate(model, val_loader, loss_func, device):
     total_loss = 0.0
     total_samples = 0
     model.eval()
@@ -37,7 +37,7 @@ def evaluate(model, val_loader, loss_func):
 
     with torch.no_grad():
         for xb, yb in val_loader:
-            xb, yb = xb.to(Hyperparameters.device), yb.to(Hyperparameters.device)
+            xb, yb = xb.to(device), yb.to(device)
             yb = yb.float().view(-1, 1)
             out = model(xb)
 
@@ -108,7 +108,7 @@ def predict_image(img, model, device):
     yb = model(xb)
     return yb.item()
 
-def split_speakers(audio_dir, train_perc=0.7, val_perc=0.2, seed=3, save_path='speaker_split.json', force_new=False):
+def split_speakers(audio_dir, train_perc, val_perc, seed, save_path, force_new):
     if os.path.exists(save_path) and not force_new:
         print(f"Loading speaker split from: {save_path}")
         with open(save_path, 'r') as f:
@@ -340,42 +340,74 @@ def display(processor):
 
 
 def main():
+    with open("config.json", "r") as f:
+        hyper = json.load(f)
+
+    device = torch.device(hyper["device"] if torch.cuda.is_available() else "cpu")
+
+    loss_func = getattr(nn, hyper["training"]["loss_func"])()
+    optim_func = getattr(torch.optim, hyper["training"]["optim_func"])
+    activation = getattr(nn, hyper["model"]["activation"])()
+
+    if hyper["transform"]["type"] == "MFCC":
+        transform = T.MFCC(
+            sample_rate=hyper["data"]["sample_rate"],
+            n_mfcc=hyper["data"]["transform"]["n_mfcc"],
+            melkwargs=hyper["data"]["transform"]["melkwargs"]
+        )
+    else:
+        raise ValueError(f"Unknown transform type: {hyper["data"]["transform"]["type"]}")
 
     train_sp, val_sp, test_sp = split_speakers(
-        audio_dir=Hyperparameters.audio_dir, train_perc=0.7, val_perc=0.2, seed=3, save_path="speaker_split.json")
+        audio_dir=  hyper["paths"]["audio_dir"],
+        train_perc= hyper["split_speaker"]["train_perc"],
+        val_perc=   hyper["split_speaker"]["valid_perc"],
+        seed=       hyper["split_speaker"]["rand_seed"],
+        save_path=  hyper["split_speaker"]["path"],
+        force_new=  hyper["split_speaker"]["force_new"]
+    )
 
-    train_ds = CustomWhisperVIADataset(Hyperparameters.audio_dir, Hyperparameters.ann_dir, Hyperparameters.transform, speakers_include=train_sp)
-    val_ds = CustomWhisperVIADataset(Hyperparameters.audio_dir, Hyperparameters.ann_dir, Hyperparameters.transform, speakers_include=val_sp)
-    test_ds = CustomWhisperVIADataset(Hyperparameters.audio_dir, Hyperparameters.ann_dir, Hyperparameters.transform, speakers_include=test_sp)
+    train_ds = CustomWhisperVIADataset( hyper["paths"]["audio_dir"], hyper["paths"]["ann_dir"], transform, speakers_include=train_sp)
+    val_ds = CustomWhisperVIADataset(   hyper["paths"]["audio_dir"], hyper["paths"]["ann_dir"], transform, speakers_include=val_sp)
+    test_ds = CustomWhisperVIADataset(  hyper["paths"]["audio_dir"], hyper["paths"]["ann_dir"], transform, speakers_include=test_sp)
 
-    train_loader = DataLoader(train_ds, Hyperparameters.batch_size, shuffle=Hyperparameters.train_shuffle, collate_fn=collate_fn)
-    val_loader = DataLoader(val_ds, Hyperparameters.batch_size, shuffle=Hyperparameters.val_shuffle, collate_fn=collate_fn)
-    test_loader = DataLoader(test_ds, Hyperparameters.batch_size, shuffle=False, collate_fn=collate_fn)
+    train_loader = DataLoader(  train_ds, hyper["training"]["batch_size"], shuffle=hyper["training"]["train_shuffle"], collate_fn=collate_fn)
+    val_loader = DataLoader(    val_ds,   hyper["training"]["batch_size"], shuffle=hyper["training"]["val_shuffle"], collate_fn=collate_fn)
+    test_loader = DataLoader(   test_ds,  hyper["training"]["batch_size"], shuffle=False, collate_fn=collate_fn)
 
-    # processor = AudioProcessor()
+    model = WhisperVIAModel(
+        activation,
+        hyper["model"]["hidden_feat"],
+        hyper["model"]["in_feat"],
+        hyper["model"]["out_feat"],
+        hyper["model"]["conv_channels"],
+        hyper["model"]["adaptive_pool_size"]
+    )
+    model.to(device)
+    pytorch_total_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    print("Total Trainable Parameters in Network:", pytorch_total_params)
 
-    # for folder in os.listdir(data_dir):
-    #     folder_path = os.path.join(data_dir, folder)
-    #     if os.path.isdir(folder_path):
-    #         for filename in os.listdir(folder_path):
-    #             if filename.endswith(".wav"):
-    #                 filepath = os.path.join(folder_path, filename)
-    #                 processor.process_audio(filepath)
+    optim = optim_func(model.parameters(), lr=hyper["initial_learning_rate"])
 
-    # display(processor)
-
-    model = WhisperVIAModel(Hyperparameters.activation, Hyperparameters.hidden_feat, Hyperparameters.in_feat, Hyperparameters.out_feat, Hyperparameters.conv_channels)
-    model.to(Hyperparameters.device)
-
-    optim = Hyperparameters.optim_func(model.parameters(), lr=Hyperparameters.initial_learning_rate)
-
-    train_losses, val_losses = timed_training(model, train_loader, val_loader, Hyperparameters.loss_func, Hyperparameters.initial_learning_rate, Hyperparameters.epochs, Hyperparameters.patience, optim, Hyperparameters.device)
+    train_losses, val_losses = timed_training(
+        model,
+        train_loader,
+        val_loader,
+        loss_func,
+        hyper["training"]["initial_learning_rate"],
+        hyper["training"]["epochs"],
+        hyper["training"]["patience"],
+        optim,
+        device
+    )
 
     plot_loss_progression(train_losses, val_losses)
 
-    testing_examples(model, test_loader, Hyperparameters.max_examples, Hyperparameters.device)
-    test_loss, test_precision, test_recall, test_f1 = evaluate(model, test_loader, Hyperparameters.loss_func)
-    print(f"\nFinal Test Metrics:\nLoss: {test_loss:.6f}\nPrecision: {test_precision:.4f}\nRecall: {test_recall:.4f}\nF1 Score: {test_f1:.4f}")
+    testing_examples(model, test_loader, hyper["data"]["max_examples"], device)
+
+    test_loss, test_precision, test_recall, test_f1 = evaluate(model, test_loader, loss_func, device)
+    print(
+        f"\nFinal Test Metrics:\nLoss: {test_loss:.6f}\nPrecision: {test_precision:.4f}\nRecall: {test_recall:.4f}\nF1 Score: {test_f1:.4f}")
 
     torch.save(model.state_dict(), "WhisperVIAModel_1x0x2.pth")
     print("Model saved as 'WhisperVIAModel_1x0x2.pth'")
@@ -383,6 +415,3 @@ def main():
 if __name__ == "__main__":
     main()
 
-
-# start error analysis - find where the error is the largest to mitigate the problem potentially
-# turn Config into a .txt or a .json file
